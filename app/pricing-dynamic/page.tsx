@@ -38,7 +38,11 @@ function DynamicPricingContent({ session }: { session: any }) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">Error loading pricing</p>
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
+          <Button onClick={() => {
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            }
+          }}>Try Again</Button>
         </div>
       </div>
     );

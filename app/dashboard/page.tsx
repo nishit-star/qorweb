@@ -77,9 +77,9 @@ function DashboardContent({ session }: { session: any }) {
       await attach({
         productId,
         dialog: ProductChangeDialog,
-        returnUrl: window.location.origin + '/dashboard',
-        successUrl: window.location.origin + '/dashboard',
-        cancelUrl: window.location.origin + '/dashboard',
+        returnUrl: (typeof window !== 'undefined' ? window.location.origin : '') + '/dashboard',
+        successUrl: (typeof window !== 'undefined' ? window.location.origin : '') + '/dashboard',
+        cancelUrl: (typeof window !== 'undefined' ? window.location.origin : '') + '/dashboard',
       });
     } finally {
       setLoadingProductId(null);

@@ -33,7 +33,9 @@ export default function RegisterPage() {
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Force a hard navigation to ensure cookies are sent
-        window.location.href = '/';
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
       } else {
         throw response.error;
       }
@@ -236,7 +238,9 @@ export default function RegisterPage() {
               <GoogleSignInButton
                 onError={(error) => setError(error)}
                 onSuccess={() => {
-                  window.location.href = '/';
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/';
+                  }
                 }}
                 disabled={loading}
               />

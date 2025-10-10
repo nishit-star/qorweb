@@ -46,7 +46,9 @@ function LoginForm() {
       
       // Use router for client-side navigation after successful login
       const returnUrl = searchParams.get('from') || '/dashboard';
-      window.location.replace(returnUrl);
+      if (typeof window !== 'undefined') {
+        window.location.replace(returnUrl);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to login');
       setLoading(false);

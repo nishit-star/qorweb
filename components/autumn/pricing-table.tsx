@@ -79,12 +79,14 @@ export default function PricingTable({
                     await attach({
                       productId: product.id,
                       dialog: AttachDialog,
-                      returnUrl: window.location.origin + '/dashboard',
-                      successUrl: window.location.origin + '/dashboard',
-                      cancelUrl: window.location.origin + '/pricing',
+                      returnUrl: (typeof window !== 'undefined' ? window.location.origin : '') + '/dashboard',
+                      successUrl: (typeof window !== 'undefined' ? window.location.origin : '') + '/dashboard',
+                      cancelUrl: (typeof window !== 'undefined' ? window.location.origin : '') + '/pricing',
                     });
                   } else if (product.display?.button_url) {
-                    window.open(product.display?.button_url, "_blank");
+                    if (typeof window !== 'undefined') {
+                      window.open(product.display?.button_url, "_blank");
+                    }
                   }
                 },
               }}

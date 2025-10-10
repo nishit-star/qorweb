@@ -108,9 +108,9 @@ export default function AttachDialog(params?: AttachDialogProps) {
                     featureId: option.feature_id,
                     quantity: option.quantity || 0,
                   })),
-                  returnUrl: window.location.origin + '/dashboard',
-                  successUrl: window.location.origin + '/dashboard',
-                  cancelUrl: window.location.origin + '/plans',
+                  returnUrl: (typeof window !== 'undefined' ? window.location.origin : '') + '/dashboard',
+                  successUrl: (typeof window !== 'undefined' ? window.location.origin : '') + '/dashboard',
+                  cancelUrl: (typeof window !== 'undefined' ? window.location.origin : '') + '/plans',
                 });
                 setOpen(false);
                 
@@ -119,17 +119,27 @@ export default function AttachDialog(params?: AttachDialogProps) {
                 
                 // Show success message based on scenario
                 if (preview.scenario === 'downgrade') {
-                  alert(`Downgrade scheduled! Your plan will change to ${preview.product_name} on ${new Date(preview.next_cycle_at!).toLocaleDateString()}.`);
+                  if (typeof window !== 'undefined') {
+                    alert(`Downgrade scheduled! Your plan will change to ${preview.product_name} on ${new Date(preview.next_cycle_at!).toLocaleDateString()}.`);
+                  }
                   // Redirect to dashboard after downgrade
-                  window.location.href = '/dashboard';
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/dashboard';
+                  }
                 } else if (preview.scenario === 'upgrade') {
-                  alert(`Upgrade successful! You're now on the ${preview.product_name} plan.`);
+                  if (typeof window !== 'undefined') {
+                    alert(`Upgrade successful! You're now on the ${preview.product_name} plan.`);
+                  }
                   // Redirect to dashboard after upgrade
-                  window.location.href = '/dashboard';
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/dashboard';
+                  }
                 }
               } catch (error) {
                 console.error('Error attaching product:', error);
-                alert('An error occurred. Please try again or contact support.');
+                if (typeof window !== 'undefined') {
+                  alert('An error occurred. Please try again or contact support.');
+                }
               } finally {
                 setLoading(false);
               }

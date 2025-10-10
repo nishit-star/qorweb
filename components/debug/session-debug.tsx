@@ -67,12 +67,12 @@ export function SessionDebug() {
 
         <div>
           <strong>Cookies:</strong>
-          <div>- Document cookies: {document.cookie ? 'present' : 'none'}</div>
+          <div>- Document cookies: {typeof window !== 'undefined' && document.cookie ? 'present' : 'none'}</div>
         </div>
 
         <div>
           <strong>Local Storage:</strong>
-          <div>- Keys: {Object.keys(localStorage).length}</div>
+          <div>- Keys: {typeof window !== 'undefined' ? Object.keys(localStorage).length : 'N/A (SSR)'}</div>
         </div>
       </div>
     </div>
