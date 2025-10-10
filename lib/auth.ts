@@ -46,7 +46,7 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       scope: ['email', 'profile', 'openid'],
       prompt: 'select_account', // Always ask to select account
-      redirectURI: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/callback/google`,
+      redirectURI: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google`,
       mapProfileToUser: (profile) => {
         return {
           name: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim(),
