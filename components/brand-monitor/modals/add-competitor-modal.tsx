@@ -44,7 +44,7 @@ export function AddCompetitorModal({
                 onChange={(e) => onNameChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="e.g., Anthropic"
-className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#170DF2] focus:border-transparent"
+className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent"
               />
             </div>
             <div>
@@ -57,7 +57,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none
                 onChange={(e) => onUrlChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="e.g., anthropic.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#170DF2] focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#155DFC] focus:border-transparent"
               />
             </div>
           </div>
@@ -65,7 +65,7 @@ className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none
             <button
               onClick={onAdd}
               disabled={!competitorName.trim()}
-              className="flex-1 h-10 px-4 rounded-[10px] text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#170DF2] text-white hover:bg-[#665DFF] dark:bg-[#170DF2] dark:hover:bg-[#665DFF] dark:text-white [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#110A8B,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(23, 13, 242, 58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#110A8B,_0px_1px_3px_0px_rgba(23, 13, 242, 40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#110A8B,_0px_1px_2px_0px_rgba(23, 13, 242, 30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
+              className="flex-1 h-10 px-4 rounded-[10px] text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#155DFC] text-white hover:bg-[#665DFF] dark:bg-[#155DFC] dark:hover:bg-[#665DFF] dark:text-white [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#110A8B,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(23, 13, 242, 58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#110A8B,_0px_1px_3px_0px_rgba(23, 13, 242, 40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#110A8B,_0px_1px_2px_0px_rgba(23, 13, 242, 30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
             >
               Add Competitor
             </button>

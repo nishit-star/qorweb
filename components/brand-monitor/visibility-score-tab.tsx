@@ -34,7 +34,7 @@ export function VisibilityScoreTab({
             </div>
             {/* Visibility Score in top right */}
             <div className="text-right">
-              <p className="text-3xl font-bold text-[#170DF2]">{brandData.visibilityScore}%</p>
+              <p className="text-3xl font-bold text-[#155DFC]">{brandData.visibilityScore}%</p>
               <p className="text-xs text-gray-500 mt-1">Overall Score</p>
             </div>
           </div>
@@ -49,7 +49,7 @@ export function VisibilityScoreTab({
                     <defs>
                       <linearGradient id="orangeGradient" x1="0" y1="0" x2="1" y2="1">
                         <stop offset="0%" stopColor="#665DFF" />
-                        <stop offset="100%" stopColor="#170DF2" />
+                        <stop offset="100%" stopColor="#155DFC" />
                       </linearGradient>
                       <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
                         <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
@@ -85,7 +85,7 @@ export function VisibilityScoreTab({
                           key={`cell-${idx}`} 
                           fill={competitor.isOwn ? 'url(#orangeGradient)' : 
                             ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1', '#14b8a6', '#f43f5e'][idx % 8]}
-                          stroke={competitor.isOwn ? '#170DF2' : 'none'}
+                          stroke={competitor.isOwn ? '#155DFC' : 'none'}
                           strokeWidth={competitor.isOwn ? 2 : 0}
                         />
                       ))}
@@ -128,7 +128,7 @@ export function VisibilityScoreTab({
                 const faviconUrl = competitorData?.url ? 
                   `https://www.google.com/s2/favicons?domain=${competitorData.url}&sz=64` : null;
                 
-                const color = competitor.isOwn ? '#170DF2' : 
+                const color = competitor.isOwn ? '#155DFC' : 
                   ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1', '#14b8a6', '#f43f5e'][idx % 8];
                 
                 return (
@@ -152,14 +152,14 @@ export function VisibilityScoreTab({
                           />
                         ) : null}
                         <div className={`w-full h-full ${
-                          competitor.isOwn ? 'bg-[#170DF2]' : 'bg-gray-300'
+                          competitor.isOwn ? 'bg-[#155DFC]' : 'bg-gray-300'
                         } flex items-center justify-center text-white text-[8px] font-bold rounded`} 
                         style={{ display: faviconUrl ? 'none' : 'flex' }}>
                           {competitor.name.charAt(0)}
                         </div>
                       </div>
                       <span className={`text-sm truncate ${
-                        competitor.isOwn ? 'font-semibold text-[#170DF2]' : 'text-gray-700'
+                        competitor.isOwn ? 'font-semibold text-[#155DFC]' : 'text-gray-700'
                       }`}>
                         {competitor.name}
                       </span>

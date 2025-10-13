@@ -51,14 +51,14 @@ export const CompetitorCell: React.FC<CompetitorCellProps> = ({
               href={url.startsWith('http') ? url : `https://${url}`}
               target="_blank"
               rel="noopener noreferrer"
-              className={`text-sm font-medium hover:underline ${isOwn ? 'text-[#170DF2]' : 'text-gray-900 hover:text-blue-600'} flex items-center gap-1`}
+              className={`text-sm font-medium hover:underline ${isOwn ? 'text-[#155DFC]' : 'text-gray-900 hover:text-blue-600'} flex items-center gap-1`}
               onClick={(e) => e.stopPropagation()}
             >
               {name}
               <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
             </a>
           ) : (
-            <h3 className={`text-sm font-medium ${isOwn ? 'text-[#170DF2]' : 'text-gray-900'}`}>
+            <h3 className={`text-sm font-medium ${isOwn ? 'text-[#155DFC]' : 'text-gray-900'}`}>
               {name}
             </h3>
           )}

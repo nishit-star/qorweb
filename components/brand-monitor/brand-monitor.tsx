@@ -598,7 +598,7 @@ export function BrandMonitor({
                           </CardDescription>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-[#170DF2]">{brandData.visibilityScore}%</p>
+                          <p className="text-2xl font-bold text-[#155DFC]">{brandData.visibilityScore}%</p>
                           <p className="text-xs text-gray-500 mt-1">Average Score</p>
                         </div>
                       </div>
@@ -644,7 +644,7 @@ export function BrandMonitor({
                           </CardDescription>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-[#170DF2]">{analysis.prompts.length}</p>
+                          <p className="text-2xl font-bold text-[#155DFC]">{analysis.prompts.length}</p>
                           <p className="text-xs text-gray-500 mt-1">Total Prompts</p>
                         </div>
                       </div>

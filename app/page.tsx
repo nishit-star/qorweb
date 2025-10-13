@@ -20,7 +20,7 @@ export default function Home() {
           <div className="text-center">
             <h1 className="text-5xl lg:text-7xl font-bold tracking-tight mb-8 animate-fade-in-up">
               <span className="block text-zinc-900">AutoReach Monitor</span>
-              <span className="block bg-gradient-to-r from-[#090376] to-[#170DF2] bg-clip-text text-transparent">
+              <span className="block bg-[#155DFC] bg-clip-text text-transparent">
                 AI Brand Visibility Platform
               </span>
             </h1>
@@ -36,8 +36,7 @@ export default function Home() {
               </Link>
               {/* <Link
                 href="/plans"
-                className="btn-firecrawl-default inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8"
-              >
+                className="btn-firecrawl-default inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-base font-medium transition-all duration-200 h-12 px-8">
                 View Pricing
               </Link> */}
             </div>
@@ -76,7 +75,7 @@ export default function Home() {
       {/* CTA Section 1 */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-[30px] p-16 text-center">
+          <div className="bg-[#155DFC] rounded-[30px] p-16 text-center">
             <h2 className="text-4xl font-bold text-white mb-6">
               See How AI Models Rank Your Brand
             </h2>

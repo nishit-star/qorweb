@@ -138,7 +138,7 @@
 }
 
 .btn-firecrawl-orange {
-  background-color: #170DF2;
+  background-color: #155DFC;
   color: white;
   box-shadow: inset 0px -2px 0px 0px #090376, 0px 1px 6px 0px rgba(23, 13, 242, 58%);
 }
@@ -348,7 +348,7 @@
 }
 
 .autumn-pricing-table button[data-primary="true"] {
-  background-color: #170DF2 !important;
+  background-color: #155DFC !important;
   color: white !important;
   box-shadow: inset 0px -2px 0px 0px #090376, 0px 1px 6px 0px rgba(23, 13, 242, 58%) !important;
 }

@@ -71,7 +71,7 @@ function BrandMonitorContent({ session }: { session: any }) {
               <div className="text-center flex-1">
                 <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-2 animate-fade-in-up">
                   <span className="block text-zinc-900">AutoReach Monitor</span>
-                  <span className="block bg-gradient-to-r from-[#090376] to-[#170DF2] bg-clip-text text-transparent">
+                  <span className="block bg-[#155DFC] bg-clip-text text-transparent">
                     AI Brand Visibility Platform
                   </span>
                 </h1>

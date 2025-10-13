@@ -167,7 +167,7 @@ export function ProviderRankingsTabs({
             </CardDescription>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-[#170DF2]">#{brandRank}</p>
+            <p className="text-2xl font-bold text-[#155DFC]">#{brandRank}</p>
             <p className="text-xs text-gray-500 mt-1">Average Rank</p>
           </div>
         </div>
@@ -213,7 +213,7 @@ export function ProviderRankingsTabs({
                           className={`
                             ${idx > 0 ? 'border-t border-gray-200' : ''}
                             ${competitor.isOwn 
-                ? 'bg-[#170DF2]/10'
+                ? 'bg-[#155DFC]'
                               : 'hover:bg-gray-50 transition-colors'
                             }
                           `}
@@ -262,7 +262,7 @@ export function ProviderRankingsTabs({
             <p className="text-xs text-gray-500 mb-1">Competitors</p>
             <p className="text-lg font-semibold text-black">{competitors.length}</p>
           </div>
-          <div className="bg-[#170DF2]/10 rounded-lg p-4 text-center">
+          <div className="bg-[#155DFC] rounded-lg p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">{brandName} Rank</p>
             <p className="text-lg font-semibold text-black">
               #{brandRank}
