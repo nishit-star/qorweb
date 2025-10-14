@@ -3,8 +3,8 @@ import nodemailer from 'nodemailer';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, url, competitors, prompts } = await req.json();
-    if (!email || !url) {
+    const { email, url, competitors, prompts ,categories} = await req.json();
+    if (!email || !url|| !categories || !Array.isArray(competitors) || competitors.length === 0) {
       return NextResponse.json({ success: false, error: 'email and url are required' }, { status: 400 });
     }
 
@@ -16,11 +16,17 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const payload = { email, url, competitors: competitors || [], prompts: prompts || '' };
+    const payload = {
+      email,
+      url,
+      categories,
+      competitors,
+      prompts: prompts || '',
+    };
 
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
-      to: 'nishit@thewelzin.com',
+      to: 'jasjot@thewelzin.com',
       subject: 'Generate Files Request',
       text: JSON.stringify(payload, null, 2),
       html: `<pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`
