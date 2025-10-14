@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
-      to: 'jasjot@thewelzin.com',
+      to: 'nishit@thewelzin.com',
       subject: 'Generate Files Request',
       text: JSON.stringify(payload, null, 2),
       html: `<pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`
