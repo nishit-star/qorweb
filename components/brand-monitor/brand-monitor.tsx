@@ -238,6 +238,14 @@ export function BrandMonitor({
         throw new Error('No company data received');
       }
       
+      // If prompts were generated on the server, prefill them for analysis view
+      if (Array.isArray(data.prompts) && data.prompts.length > 0) {
+        const promptStrings = data.prompts.map((p: any) => p?.prompt ?? p).filter((p: any) => typeof p === 'string');
+        if (promptStrings.length > 0) {
+          dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: promptStrings });
+        }
+      }
+      
       // Scrape was successful - credits have been deducted, refresh the navbar
       if (onCreditsUpdate) {
         onCreditsUpdate();
@@ -386,37 +394,13 @@ export function BrandMonitor({
       currentView.classList.add('opacity-0');
     }
 
-    try {
-      // Call API to generate prompts for the company based on identified competitors
-      const res = await fetch('/api/brand-monitor/generate-prompts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          company,
-          competitors: identifiedCompetitors
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const promptStrings = Array.isArray(data.prompts)
-          ? data.prompts.map((p: any) => p?.prompt).filter((p: any) => typeof p === 'string')
-          : [];
-        if (promptStrings.length > 0) {
-          // Pre-fill the analyzing prompts so the list shows up
-          dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: promptStrings });
-        }
-      } else {
-        console.warn('Failed to generate prompts, proceeding without prefill');
-      }
-    } catch (e) {
-      console.warn('Error generating prompts:', e);
-    }
-
+    // We already prefetched prompts in the scrape API response.
+    // Just transition to the prompts view.
     setTimeout(() => {
       dispatch({ type: 'SET_SHOW_COMPETITORS', payload: false });
       dispatch({ type: 'SET_SHOW_PROMPTS_LIST', payload: true });
     }, 300);
-  }, [company, identifiedCompetitors]);
+  }, [company]);
   
   const handleAnalyze = useCallback(async () => {
     if (!company) return;
@@ -454,11 +438,15 @@ export function BrandMonitor({
     }});
     dispatch({ type: 'SET_ANALYSIS_TILES', payload: [] });
     
-    // Initialize prompt completion status
+    // Initialize prompt completion status using prompts from state
     const initialStatus: any = {};
     const expectedProviders = getEnabledProviders().map(config => config.name);
-    
-    normalizedPrompts.forEach(prompt => {
+
+    const promptsForStatus = (analyzingPrompts?.length ? analyzingPrompts : userPrompts)
+      .map(p => p.trim())
+      .filter(Boolean);
+
+    promptsForStatus.forEach(prompt => {
       initialStatus[prompt] = {};
       expectedProviders.forEach(provider => {
         initialStatus[prompt][provider] = 'pending';
@@ -467,15 +455,24 @@ export function BrandMonitor({
     dispatch({ type: 'SET_PROMPT_COMPLETION_STATUS', payload: initialStatus });
 
     try {
-      await startSSEConnection('/api/brand-monitor/analyze', {
+      // Build payload and use relative path to avoid cross-origin issues
+      const analyzeUrl = '/api/brand-monitor/analyze';
+      const promptsToSend = (analyzingPrompts?.length ? analyzingPrompts : userPrompts)
+        .map(p => p.trim())
+        .filter(Boolean);
+
+      const payload: any = {
+        company,
+        competitors: identifiedCompetitors,
+        ...(promptsToSend.length ? { prompts: promptsToSend } : {}),
+      };
+
+      console.debug('[ANALYZE] Posting to', analyzeUrl, 'payload:', payload);
+
+      await startSSEConnection(analyzeUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          company, 
-          // Send custom prompts only if provided; otherwise omit to let backend generate via generatePromptsForCompany
-          ...(userPrompts.length > 0 ? { prompts: userPrompts } : {}),
-          competitors: identifiedCompetitors 
-        }),
+        body: JSON.stringify(payload),
       });
     } finally {
       dispatch({ type: 'SET_ANALYZING', payload: false });

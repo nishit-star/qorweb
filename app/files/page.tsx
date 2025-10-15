@@ -1,9 +1,9 @@
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 export const dynamic = 'force-dynamic';
 
-const ElapsedTimer = dynamic(() => import('@/components/files/ElapsedTimer'), { ssr: false });
-const MarkReady = dynamic(() => import('@/components/files/MarkReady'), { ssr: false });
-const BrandIndustryForm = dynamic(() => import('@/components/files/BrandIndustryForm'), { ssr: false });
+const ElapsedTimer = nextDynamic(() => import('@/components/files/ElapsedTimer'), { ssr: false });
+const MarkReady = nextDynamic(() => import('@/components/files/MarkReady'), { ssr: false });
+const BrandIndustryForm = nextDynamic(() => import('@/components/files/BrandIndustryForm'), { ssr: false });
 
 async function fetchFiles() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/files/list`, { cache: 'no-store' });

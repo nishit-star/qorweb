@@ -10,43 +10,70 @@ export async function GET(req: NextRequest, context: { params: Promise<{ jobId: 
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
-      function send(data: any) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+
+      let pollTimer: NodeJS.Timeout | null = null;
+      let keepAliveTimer: NodeJS.Timeout | null = null;
+      let isClosed = false;
+
+      function safeSend(data: any) {
+        if (isClosed) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          safeClose();
+        }
       }
+
+      function safeEnqueueKeepAlive() {
+        if (isClosed) return;
+        try {
+          controller.enqueue(encoder.encode(`:\n\n`));
+        } catch {
+          safeClose();
+        }
+      }
+
+      function safeClose() {
+        if (isClosed) return;
+        isClosed = true;
+        if (pollTimer) clearInterval(pollTimer);
+        if (keepAliveTimer) clearInterval(keepAliveTimer);
+        try { controller.close(); } catch {}
+      }
+
       // Initial send
       try {
         const rows = await db.select().from(fileGenerationJobs).where(eq(fileGenerationJobs.id, jobId));
         const job = rows[0];
         if (!job) {
-          send({ error: 'NOT_FOUND' });
-          controller.close();
+          safeSend({ error: 'NOT_FOUND' });
+          safeClose();
           return;
         }
-        send({ status: job.status, result: job.result, error: job.error });
+        safeSend({ status: job.status, result: job.result, error: job.error });
       } catch (e) {
-        send({ error: 'Internal error' });
-        controller.close();
+        safeSend({ error: 'Internal error' });
+        safeClose();
         return;
       }
 
       // Poll DB periodically server-side and push updates
       let lastStatus: string | null = null;
-      const interval = setInterval(async () => {
+      pollTimer = setInterval(async () => {
+        if (isClosed) return;
         try {
           const rows = await db.select().from(fileGenerationJobs).where(eq(fileGenerationJobs.id, jobId));
           const job = rows[0];
           if (!job) {
-            send({ error: 'NOT_FOUND' });
-            clearInterval(interval);
-            controller.close();
+            safeSend({ error: 'NOT_FOUND' });
+            safeClose();
             return;
           }
           if (job.status !== lastStatus) {
             lastStatus = job.status;
-            send({ status: job.status, result: job.result, error: job.error });
+            safeSend({ status: job.status, result: job.result, error: job.error });
             if (job.status === 'completed' || job.status === 'failed') {
-              clearInterval(interval);
-              controller.close();
+              safeClose();
             }
           }
         } catch {
@@ -55,16 +82,14 @@ export async function GET(req: NextRequest, context: { params: Promise<{ jobId: 
       }, 3000);
 
       // Keep-alive
-      const keepAlive = setInterval(() => {
-        controller.enqueue(new TextEncoder().encode(`:\n\n`));
+      keepAliveTimer = setInterval(() => {
+        safeEnqueueKeepAlive();
       }, 15000);
 
       // Close on client abort
       const signal = req.signal as AbortSignal;
       signal?.addEventListener?.('abort', () => {
-        clearInterval(interval);
-        clearInterval(keepAlive);
-        try { controller.close(); } catch {}
+        safeClose();
       });
     },
   });
