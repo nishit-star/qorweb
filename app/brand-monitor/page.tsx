@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandMonitor } from "@/components/brand-monitor/brand-monitor";
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Menu, X, Plus, Trash2, Loader2 } from "lucide-react";
@@ -16,6 +16,9 @@ import { useSession } from "@/lib/auth-client";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const BrandMonitor = dynamic(() => import("@/components/brand-monitor/brand-monitor").then(m => m.BrandMonitor), { ssr: false });
+const FilesTab = dynamic(() => import("@/components/brand-monitor/files-tab").then(m => m.FilesTab), { ssr: false });
 
 /**
  * Tabbed Brand Monitor Page
@@ -431,6 +434,16 @@ export default function BrandMonitorPage() {
     "brand"
   );
 
+  // Auto-select tab from hash
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#','');
+      if (hash === 'files') setActiveTab('files');
+      if (hash === 'aeo') setActiveTab('aeo');
+      if (hash === 'brand') setActiveTab('brand');
+    }
+  }, []);
+
   useEffect(() => {
     if (!isPending && !session) {
       router.push("/login");
@@ -473,23 +486,7 @@ export default function BrandMonitorPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Keep the hero header at top so it's shared across tabs */}
       <div className="relative overflow-hidden bg-white border-b">
-        <div className="px-4 sm:px-6 lg:px-8 py-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between">
-              <div className="text-center flex-1">
-                <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-2 animate-fade-in-up">
-                  <span className="block text-zinc-900">AutoReach Monitor</span>
-                  <span className="block bg-[#155DFC] bg-clip-text text-transparent">
-                    AI Brand Visibility Platform
-                  </span>
-                </h1>
-                <p className="text-lg text-zinc-600 animate-fade-in-up animation-delay-200">
-                  Track how AI models rank your brand against competitors
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        
 
         {/* TAB BAR (placed in the lower grey area under header) */}
         <div className="bg-gray-50 border-t">
@@ -529,21 +526,7 @@ export default function BrandMonitorPage() {
         {activeTab === "brand" && <BrandMonitorContent session={session} onOpenAeoForUrl={handleOpenAeoForUrl} onOpenFilesForUrl={handleOpenFilesForUrl} prefillBrand={prefillBrand} />}
         {activeTab === "aeo" && <AeoReportTab prefill={prefillAeo} onOpenBrandForUrl={(url, customerName) => { setPrefillBrand({ url, customerName: (customerName && customerName.trim()) ? customerName : "autouser" }); setActiveTab("brand"); }} onOpenFilesForUrl={handleOpenFilesForUrl} />}
         {activeTab === "files" && (
-          <div className="bg-white rounded-lg border p-8 min-h-[50vh]">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold">Files</h2>
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => setActiveTab("brand")}>Brand Monitor</Button>
-                <Button variant="outline" onClick={() => setActiveTab("aeo")}>AEO Report</Button>
-              </div>
-            </div>
-            {/* Placeholder content for files history/generation */}
-            {pendingFiles ? (
-              <div className="text-gray-600">No files found for {pendingFiles.url}. Generation flow will be added later.</div>
-            ) : (
-              <p className="text-gray-600">This section is under development.</p>
-            )}
-          </div>
+          <FilesTab prefill={pendingFiles} />
         )}
         {activeTab === "ugc" && (
           <div className="bg-white rounded-lg border p-8 min-h-[50vh]">

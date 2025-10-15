@@ -68,12 +68,7 @@ export function Navbar() {
                   Brand Monitor
                 </Link>
 
-                <Link
-                  href="/generate-files"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                >
-                  Generate Files
-                </Link>
+                
               </>
             )}
             <Link

@@ -255,6 +255,13 @@ Create 3 prompts for each of these categories:
 - alternatives
 - recommendations
 
+Rules:
+- DO NOT USE THE NAME OF THE BRAND IN THE PROMPTS YOU WILL BE GENERATING
+- Focus on the company's main products, industry, keywords, and competitors
+- Make prompts relevant to the brand's specific market and offerings
+- Use natural language people would actually search for
+- Avoid generic terms like "best company" or "top brand"
+
 Company Info:
 Name: ${brandName}
 Industry: ${industry}
@@ -266,18 +273,31 @@ Competitors: ${competitors.join(", ")}
 
   // --- Call the AI model ---
   
-  const { aiOutput } = await generateObject({
+  const { object } = await generateObject({
       model,
       schema: PromptSchema,
-      systemPrompt,
+      prompt: systemPrompt,
       temperature: 0.3,
     });
 
   // --- Parse AI response safely ---
+  // If the provider returned structured array matching PromptSchema, use it directly
+  if (Array.isArray(object) && object.length > 0 && typeof object[0]?.prompt === 'string') {
+    return object as BrandPrompt[];
+  }
+
+  // Otherwise, try to coerce legacy/map output into our format, else fallback templates
   let data: Record<string, string[]> = {};
   try {
-    data = JSON.parse(aiOutput);
+    // Some providers may return a JSON string in `object` depending on adapter; try to parse
+    if (typeof object === 'string') {
+      data = JSON.parse(object);
+    }
   } catch (err) {
+    // ignore; will fallback below
+  }
+
+  if (!data || Object.keys(data).length === 0) {
     console.warn("Failed to parse AI output, using fallback templates.");
     data = {
       ranking: [

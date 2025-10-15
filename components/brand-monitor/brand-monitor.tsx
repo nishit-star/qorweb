@@ -122,7 +122,6 @@ export function BrandMonitor({
     showPromptsList,
     showCompetitors,
     customPrompts,
-    removedDefaultPrompts,
     identifiedCompetitors,
     availableProviders,
     analysisProgress,
@@ -379,18 +378,45 @@ export function BrandMonitor({
     dispatch({ type: 'SET_PREPARING_ANALYSIS', payload: false });
   }, [company]);
   
-  const handleProceedToPrompts = useCallback(() => {
+  const handleProceedToPrompts = useCallback(async () => {
+    if (!company) return;
     // Add a fade-out class to the current view
     const currentView = document.querySelector('.animate-panel-in');
     if (currentView) {
       currentView.classList.add('opacity-0');
     }
-    
+
+    try {
+      // Call API to generate prompts for the company based on identified competitors
+      const res = await fetch('/api/brand-monitor/generate-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          company,
+          competitors: identifiedCompetitors
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const promptStrings = Array.isArray(data.prompts)
+          ? data.prompts.map((p: any) => p?.prompt).filter((p: any) => typeof p === 'string')
+          : [];
+        if (promptStrings.length > 0) {
+          // Pre-fill the analyzing prompts so the list shows up
+          dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: promptStrings });
+        }
+      } else {
+        console.warn('Failed to generate prompts, proceeding without prefill');
+      }
+    } catch (e) {
+      console.warn('Error generating prompts:', e);
+    }
+
     setTimeout(() => {
       dispatch({ type: 'SET_SHOW_COMPETITORS', payload: false });
       dispatch({ type: 'SET_SHOW_PROMPTS_LIST', payload: true });
     }, 300);
-  }, []);
+  }, [company, identifiedCompetitors]);
   
   const handleAnalyze = useCallback(async () => {
     if (!company) return;
@@ -410,20 +436,10 @@ export function BrandMonitor({
     }
 
     // Collect all prompts (default + custom)
-    const serviceType = detectServiceType(company);
-    const currentYear = new Date().getFullYear();
-    const defaultPrompts = [
-      `Best ${serviceType}s in ${currentYear}?`,
-      `Top ${serviceType}s for startups?`,
-      `Most popular ${serviceType}s today?`,
-      `Recommended ${serviceType}s for developers?`
-    ].filter((_, index) => !removedDefaultPrompts.includes(index));
-    
-    const allPrompts = [...defaultPrompts, ...customPrompts];
-    
-    // Store the prompts for UI display - make sure they're normalized
-    const normalizedPrompts = allPrompts.map(p => p.trim());
-    dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: normalizedPrompts });
+    // Remove hardcoded default prompts and rely on backend to generate prompts dynamically
+    // If user added any custom prompts, they will be sent; otherwise, prompts are omitted so backend generates them
+    const userPrompts = customPrompts.map(p => p.trim());
+    dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: userPrompts });
 
     console.log('Starting analysis...');
     
@@ -456,14 +472,15 @@ export function BrandMonitor({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           company, 
-          prompts: normalizedPrompts,
+          // Send custom prompts only if provided; otherwise omit to let backend generate via generatePromptsForCompany
+          ...(userPrompts.length > 0 ? { prompts: userPrompts } : {}),
           competitors: identifiedCompetitors 
         }),
       });
     } finally {
       dispatch({ type: 'SET_ANALYZING', payload: false });
     }
-  }, [company, removedDefaultPrompts, customPrompts, identifiedCompetitors, startSSEConnection, creditsAvailable]);
+  }, [company, customPrompts, identifiedCompetitors, startSSEConnection, creditsAvailable]);
   
   const handleRestart = useCallback(() => {
     dispatch({ type: 'RESET_STATE' });
@@ -572,9 +589,7 @@ export function BrandMonitor({
           analysisProgress={analysisProgress}
           prompts={analyzingPrompts}
           customPrompts={customPrompts}
-          removedDefaultPrompts={removedDefaultPrompts}
           promptCompletionStatus={promptCompletionStatus}
-          onRemoveDefaultPrompt={(index) => dispatch({ type: 'REMOVE_DEFAULT_PROMPT', payload: index })}
           onRemoveCustomPrompt={(prompt) => {
             dispatch({ type: 'SET_CUSTOM_PROMPTS', payload: customPrompts.filter(p => p !== prompt) });
           }}
@@ -583,7 +598,6 @@ export function BrandMonitor({
             dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
           }}
           onStartAnalysis={handleAnalyze}
-          detectServiceType={detectServiceType}
         />
         </div>
       )}

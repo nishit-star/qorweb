@@ -15,7 +15,7 @@ export type BrandMonitorAction =
   | { type: 'SET_SHOW_COMPETITORS'; payload: boolean }
   | { type: 'SET_CUSTOM_PROMPTS'; payload: string[] }
   | { type: 'ADD_CUSTOM_PROMPT'; payload: string }
-  | { type: 'REMOVE_DEFAULT_PROMPT'; payload: number }
+
   | { type: 'SET_AVAILABLE_PROVIDERS'; payload: string[] }
   | { type: 'SET_IDENTIFIED_COMPETITORS'; payload: IdentifiedCompetitor[] }
   | { type: 'REMOVE_COMPETITOR'; payload: number }
@@ -129,7 +129,6 @@ export interface BrandMonitorState {
   
   // Prompts
   customPrompts: string[];
-  removedDefaultPrompts: number[];
   analyzingPrompts: string[];
   
   // Competitors
@@ -173,7 +172,6 @@ export const initialBrandMonitorState: BrandMonitorState = {
   showPromptsList: false,
   showCompetitors: false,
   customPrompts: [],
-  removedDefaultPrompts: [],
   analyzingPrompts: [],
   identifiedCompetitors: [],
   availableProviders: [],
@@ -243,8 +241,7 @@ export function brandMonitorReducer(
     case 'ADD_CUSTOM_PROMPT':
       return { ...state, customPrompts: [...state.customPrompts, action.payload] };
       
-    case 'REMOVE_DEFAULT_PROMPT':
-      return { ...state, removedDefaultPrompts: [...state.removedDefaultPrompts, action.payload] };
+
       
     case 'SET_AVAILABLE_PROVIDERS':
       return { ...state, availableProviders: action.payload };

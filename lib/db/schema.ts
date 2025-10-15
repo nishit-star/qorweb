@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, uuid, boolean, jsonb, integer, pgEnum } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+export * from './schema.files';
 
 // Enums
 export const roleEnum = pgEnum('role', ['user', 'assistant']);

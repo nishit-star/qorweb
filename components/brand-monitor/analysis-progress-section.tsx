@@ -18,13 +18,10 @@ interface AnalysisProgressSectionProps {
   };
   prompts: string[];
   customPrompts: string[];
-  removedDefaultPrompts: number[];
   promptCompletionStatus: PromptCompletionStatus;
-  onRemoveDefaultPrompt: (index: number) => void;
   onRemoveCustomPrompt: (prompt: string) => void;
   onAddPromptClick: () => void;
   onStartAnalysis: () => void;
-  detectServiceType: (company: Company) => string;
 }
 
 // Provider icon mapping
@@ -78,26 +75,13 @@ export function AnalysisProgressSection({
   analysisProgress,
   prompts,
   customPrompts,
-  removedDefaultPrompts,
   promptCompletionStatus,
-  onRemoveDefaultPrompt,
   onRemoveCustomPrompt,
   onAddPromptClick,
-  onStartAnalysis,
-  detectServiceType
+  onStartAnalysis
 }: AnalysisProgressSectionProps) {
-  // Generate default prompts
-  const serviceType = detectServiceType(company);
-  const currentYear = new Date().getFullYear();
-  const defaultPrompts = [
-    `Best ${serviceType}s in ${currentYear}?`,
-    `Top ${serviceType}s for startups?`,
-    `Most popular ${serviceType}s today?`,
-    `Recommended ${serviceType}s for developers?`
-  ].filter((_, index) => !removedDefaultPrompts.includes(index));
-  
-  // Use provided prompts or generate from defaults + custom
-  const displayPrompts = prompts.length > 0 ? prompts : [...defaultPrompts, ...customPrompts];
+  // Display only the provided prompts. When backend generates prompts, they will stream in via SSE and update this list.
+  const displayPrompts = prompts.length > 0 ? prompts : customPrompts;
   
   return (
     <div className="flex items-center justify-center animate-panel-in">
@@ -178,20 +162,7 @@ export function AnalysisProgressSection({
                           <p className="text-base font-medium text-gray-900 flex-1">
                             {prompt}
                           </p>
-                          {!analyzing && !isCustom && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const originalIndex = defaultPrompts.findIndex(p => p === prompt);
-                                if (originalIndex !== -1) {
-                                  onRemoveDefaultPrompt(originalIndex);
-                                }
-                              }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </button>
-                          )}
+
                           {!analyzing && isCustom && (
                             <button
                               onClick={(e) => {
