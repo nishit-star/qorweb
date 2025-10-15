@@ -206,7 +206,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         supportsWebSearch: true,
       },
     ],
-    defaultModel: 'gemini-2.5-flash-lite',
+    defaultModel: 'gemini-2.5-flash',
     capabilities: {
       webSearch: true, // Native search grounding
       functionCalling: true,

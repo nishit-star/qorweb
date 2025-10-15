@@ -105,10 +105,28 @@ export const brandAnalyses = pgTable('brand_analyses', {
   updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()),
 });
 
+// AEO Reports (merged output of AEO auditor + Schema auditor)
+export const aeoReports = pgTable('aeo_reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id'),
+  userEmail: text('user_email'),
+  customerName: text('customer_name').notNull(),
+  url: text('url').notNull(),
+  html: text('html').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // Relations
 export const brandAnalysesRelations = relations(brandAnalyses, ({ one }) => ({
   userProfile: one(userProfile, {
     fields: [brandAnalyses.userId],
+    references: [userProfile.userId],
+  }),
+}));
+
+export const aeoReportsRelations = relations(aeoReports, ({ one }) => ({
+  userProfile: one(userProfile, {
+    fields: [aeoReports.userId],
     references: [userProfile.userId],
   }),
 }));
@@ -126,3 +144,5 @@ export type UserSettings = typeof userSettings.$inferSelect;
 export type NewUserSettings = typeof userSettings.$inferInsert;
 export type BrandAnalysis = typeof brandAnalyses.$inferSelect;
 export type NewBrandAnalysis = typeof brandAnalyses.$inferInsert;
+export type AeoReport = typeof aeoReports.$inferSelect;
+export type NewAeoReport = typeof aeoReports.$inferInsert;
