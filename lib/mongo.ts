@@ -1,6 +1,9 @@
 import { MongoClient, Db, Collection } from 'mongodb';
 
-const uri = process.env.MONGODB_URI || 'mongodb+srv://Welzin:yYsuyoXrWcxPKmPV@welzin.1ln7rs4.mongodb.net/?retryWrites=true&w=majority&appName=Welzin';
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  throw new Error('MONGODB_URI is not set. Please add it to your .env.local file.');
+}
 const dbName = process.env.MONGODB_DB || 'welzin';
 const collectionName = process.env.MONGODB_COLLECTION || 'files';
 
@@ -8,7 +11,7 @@ let client: MongoClient | null = null;
 let clientPromise: Promise<MongoClient> | null = null;
 
 async function getClient(): Promise<MongoClient> {
-  if (client && client.topology && client.topology.isConnected()) return client;
+  if (client && (client as any).topology && (client as any).topology.isConnected()) return client;
   if (!clientPromise) {
     clientPromise = new MongoClient(uri).connect().then(c => {
       client = c;

@@ -1,9 +1,9 @@
 # Files Feature (n8n → MongoDB → Frontend)
 
-Environment variables required:
+Environment variables required (set these in .env.local):
 
 ```
-MONGODB_URI=mongodb+srv://Welzin:yYsuyoXrWcxPKmPV@welzin.1ln7rs4.mongodb.net/?retryWrites=true&w=majority&appName=Welzin
+MONGODB_URI=<your-mongodb-connection-string>
 MONGODB_DB=welzin
 MONGODB_COLLECTION=files
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
