@@ -3,7 +3,7 @@
 Environment variables required (set these in .env.local):
 
 ```
-MONGODB_URI=<your-mongodb-connection-string>
+MONGODB_URI=process.env.MONGODB_URI
 MONGODB_DB=welzin
 MONGODB_COLLECTION=files
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
