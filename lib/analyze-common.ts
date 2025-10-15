@@ -94,7 +94,9 @@ export async function performAnalysis({
 
   // Use custom prompts if provided, otherwise generate them
   let analysisPrompts;
+  console.log(customPrompts ? `Using ${customPrompts.length} custom prompts` : 'Generating prompts dynamically');
   if (customPrompts && customPrompts.length > 0) {
+    console.log(customPrompts)
     // Convert string prompts to BrandPrompt objects
     analysisPrompts = customPrompts.map((prompt: string, index: number) => ({
       id: `custom-${index}`,

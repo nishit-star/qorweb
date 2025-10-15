@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { useSession } from "@/lib/auth-client";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 /**
  * Tabbed Brand Monitor Page
@@ -29,7 +31,7 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
  */
 
 /* --------------------- BrandMonitorContent (unchanged logic) --------------------- */
-function BrandMonitorContent({ session }: { session: any }) {
+function BrandMonitorContent({ session, onOpenAeoForUrl, onOpenFilesForUrl, prefillBrand }: { session: any; onOpenAeoForUrl: (url: string, customerName?: string) => void; onOpenFilesForUrl: (url: string, customerName?: string) => void; prefillBrand?: { url: string; customerName: string } | null; }) {
   const router = useRouter();
   const { customer, isLoading, error } = useCustomer();
   const refreshCustomer = useRefreshCustomer();
@@ -37,15 +39,12 @@ function BrandMonitorContent({ session }: { session: any }) {
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(
     null
   );
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [analysisToDelete, setAnalysisToDelete] = useState<string | null>(
-    null
-  );
+
 
   // Queries and mutations
   const { data: analyses, isLoading: analysesLoading } = useBrandAnalyses();
   const { data: currentAnalysis } = useBrandAnalysis(selectedAnalysisId);
-  const deleteAnalysis = useDeleteBrandAnalysis();
+  const deleteAnalysis = useDeleteBrandAnalysis(); // kept for now if used elsewhere (no delete UI)
 
   // Get credits from customer data
   const messageUsage = customer?.features?.messages;
@@ -58,25 +57,22 @@ function BrandMonitorContent({ session }: { session: any }) {
     }
   }, [error, router]);
 
+  // If prefillBrand is provided, try to open existing analysis by exact URL
+  useEffect(() => {
+    if (prefillBrand?.url && analyses && analyses.length > 0) {
+      const found = analyses.find(a => a.url === prefillBrand.url);
+      if (found) {
+        setSelectedAnalysisId(found.id);
+      }
+    }
+  }, [prefillBrand?.url, analyses]);
+
   const handleCreditsUpdate = async () => {
     // Use the global refresh to update customer data everywhere
     await refreshCustomer();
   };
 
-  const handleDeleteAnalysis = async (analysisId: string) => {
-    setAnalysisToDelete(analysisId);
-    setDeleteDialogOpen(true);
-  };
 
-  const confirmDelete = async () => {
-    if (analysisToDelete) {
-      await deleteAnalysis.mutateAsync(analysisToDelete);
-      if (selectedAnalysisId === analysisToDelete) {
-        setSelectedAnalysisId(null);
-      }
-      setAnalysisToDelete(null);
-    }
-  };
 
   const handleNewAnalysis = () => {
     setSelectedAnalysisId(null);
@@ -156,16 +152,28 @@ function BrandMonitorContent({ session }: { session: any }) {
                           {analysis.createdAt && format(new Date(analysis.createdAt), "MMM d, yyyy")}
                         </p>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteAnalysis(analysis.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-2 ml-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenAeoForUrl(analysis.url, analysis.companyName || "autouser");
+                          }}
+                        >
+                          AEO Report
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenFilesForUrl(analysis.url, analysis.companyName || "autouser");
+                          }}
+                        >
+                          Files
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -181,31 +189,27 @@ function BrandMonitorContent({ session }: { session: any }) {
               creditsAvailable={credits}
               onCreditsUpdate={handleCreditsUpdate}
               selectedAnalysis={selectedAnalysisId ? currentAnalysis : null}
-              onSaveAnalysis={(analysis) => {
-                // This will be called when analysis completes
-                // We'll implement this in the next step if needed
+              onSaveAnalysis={(analysis) => {}}
+              initialUrl={prefillBrand?.url || null}
+              autoRun={!!prefillBrand?.url && !selectedAnalysisId}
+              onRequireCreditsConfirm={(required, balance, proceed) => {
+                // Use native confirm for simplicity here; can swap to ConfirmationDialog if preferred
+                const ok = window.confirm(`Starting a brand analysis may use up to ${required} credits. Your balance is ${balance}. Proceed?`);
+                if (ok) proceed();
               }}
             />
           </div>
         </div>
       </div>
 
-      <ConfirmationDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title="Delete Analysis"
-        description="Are you sure you want to delete this analysis? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        onConfirm={confirmDelete}
-        isLoading={deleteAnalysis.isPending}
-      />
+
     </div>
   );
 }
 
 /* --------------------- Tabbed Page wrapper --------------------- */
-function AeoReportTab() {
+
+function AeoReportTab({ prefill, onOpenBrandForUrl, onOpenFilesForUrl }: { prefill: { url: string; customerName: string } | null; onOpenBrandForUrl: (url: string, customerName?: string) => void; onOpenFilesForUrl: (url: string, customerName?: string) => void; }) {
   const [customerName, setCustomerName] = useState('');
   const [url, setUrl] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -213,6 +217,8 @@ function AeoReportTab() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reports, setReports] = useState<Array<{ id: string; customerName: string; url: string; createdAt: string }>>([]);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [handledPrefillKey, setHandledPrefillKey] = useState<string | null>(null);
+  const [prefillLookupState, setPrefillLookupState] = useState<'idle' | 'looking' | 'no-match'>('idle');
 
   const fetchReports = async () => {
     setLoadingReports(true);
@@ -229,8 +235,58 @@ function AeoReportTab() {
     }
   };
 
-  // load on mount
   useEffect(() => { fetchReports(); }, []);
+
+  // Helper: normalize URL for robust matching (ignores trailing slash and lowercases hostname)
+  const normalizeUrl = (u?: string | null) => {
+    if (!u) return '';
+    try {
+      const urlObj = new URL(u);
+      // lowercase hostname
+      urlObj.hostname = urlObj.hostname.toLowerCase();
+      let normalized = urlObj.toString();
+      // remove trailing slash (but keep single slash after origin)
+      if (normalized.endsWith('/') && !/^[a-zA-Z]+:\/\/$/.test(normalized)) {
+        normalized = normalized.replace(/\/+$/, '');
+      }
+      return normalized;
+    } catch {
+      // fallback: trim, remove trailing slashes
+      return String(u).trim().replace(/\/+$/, '');
+    }
+  };
+
+  // prefill from cross-tab trigger
+  useEffect(() => {
+    if (!prefill) return;
+
+    // Set inputs and show lookup state immediately
+    setCustomerName(prefill.customerName || 'autouser');
+    setUrl(prefill.url || '');
+    setPrefillLookupState('looking');
+
+    // Wait until reports are fetched
+    if (loadingReports) return;
+
+    // Once loaded, decide using a key that includes current reports length to avoid stale skips
+    const decisionKey = `${prefill.url || ''}::${reports.length}`;
+    if (handledPrefillKey === decisionKey) return;
+
+    if (prefill.url) {
+      const prefillNorm = normalizeUrl(prefill.url);
+      const sameUrlReports = reports.filter(r => normalizeUrl(r.url) === prefillNorm);
+      const match = sameUrlReports.length > 0 ? sameUrlReports[0] : null;
+
+      if (match) {
+        handleOpenReport(match.id);
+        setPrefillLookupState('idle');
+      } else {
+        setPrefillLookupState('no-match');
+      }
+      setHandledPrefillKey(decisionKey);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill, reports, loadingReports]);
 
   const generateReport = async () => {
     if (!customerName.trim() || !url.trim()) return;
@@ -244,7 +300,6 @@ function AeoReportTab() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate report');
       setReportData(data);
-      // refresh list so the new report appears in sidebar
       fetchReports();
     } finally {
       setIsGenerating(false);
@@ -282,20 +337,20 @@ function AeoReportTab() {
   };
 
   return (
-    <div className="relative min-h-[60vh] bg-white rounded-lg border">
-      {/* Sidebar Toggle Button */}
+    <div className="flex h-[calc(100vh-12rem)] relative">
+      {/* Sidebar Toggle Button - Always visible */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className={`absolute top-3 z-10 m-4 p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 ${sidebarOpen ? 'left-[324px]' : 'left-4'}`}
+        className={`absolute top-2 z-10 p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 ${sidebarOpen ? 'left-[324px]' : 'left-4'}`}
         aria-label="Toggle sidebar"
       >
         {sidebarOpen ? (<X className="h-5 w-5 text-gray-600" />) : (<Menu className="h-5 w-5 text-gray-600" />)}
       </button>
 
-      {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} bg-white border-r overflow-hidden flex flex-col transition-all duration-200 h-full absolute left-0 top-0`}> 
+      {/* Sidebar (inline like Brand Monitor) */}
+      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} bg-white border-r overflow-hidden flex flex-col transition-all duration-200`}>
         <div className="p-4 border-b">
-          <div className="font-semibold">Previous AEO Reports</div>
+          <div className="font-semibold">AEO Reports</div>
         </div>
         <div className="overflow-y-auto flex-1">
           {loadingReports ? (
@@ -305,10 +360,18 @@ function AeoReportTab() {
           ) : (
             <div className="space-y-1 p-2">
               {reports.map(r => (
-                <div key={r.id} className="p-3 rounded-lg cursor-pointer hover:bg-gray-100" onClick={() => handleOpenReport(r.id)}>
-                  <p className="font-medium truncate">{r.customerName || 'Untitled'}</p>
-                  <p className="text-sm text-gray-500 truncate">{r.url}</p>
-                  <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                <div key={r.id} className="p-3 rounded-lg hover:bg-gray-100">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleOpenReport(r.id)}>
+                      <p className="font-medium truncate">{r.customerName || 'Untitled'}</p>
+                      <p className="text-sm text-gray-500 truncate">{r.url}</p>
+                      <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <div className="flex-shrink-0 flex gap-2">
+                      <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); onOpenBrandForUrl(r.url, r.customerName || 'autouser'); }}>Brand Monitor</Button>
+                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onOpenFilesForUrl(r.url, r.customerName || 'autouser'); }}>Files</Button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -316,35 +379,45 @@ function AeoReportTab() {
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="p-8">
-      <h2 className="text-2xl font-semibold mb-4">.</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="aeoCustomer">Customer Name *</label>
-          <input id="aeoCustomer" className="border rounded-md px-3 py-2 w-full" placeholder="Enter customer name" value={customerName} onChange={e=>setCustomerName(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="aeoUrl">Website URL *</label>
-          <input id="aeoUrl" className="border rounded-md px-3 py-2 w-full" placeholder="https://example.com" value={url} onChange={e=>setUrl(e.target.value)} />
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-6 sm:px-8 lg:px-12 py-8 max-w-7xl mx-auto">
+          {/* Use shared Inputs/Labels/Buttons for consistency */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-2">
+              <Label htmlFor="aeoCustomer" className="text-sm font-medium">Customer Name *</Label>
+              <Input id="aeoCustomer" placeholder="Enter customer name" value={customerName} onChange={e=>setCustomerName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="aeoUrl" className="text-sm font-medium">Website URL *</Label>
+              <Input id="aeoUrl" placeholder="https://example.com" value={url} onChange={e=>setUrl(e.target.value)} />
+            </div>
+          </div>
+          <Button onClick={generateReport} disabled={isGenerating} className="btn-firecrawl-default h-9 px-4">
+            {isGenerating ? 'Generating...' : 'Generate Report'}
+          </Button>
+
+          {/* Lookup status messages when coming from Brand Monitor button */}
+          {!reportData && prefillLookupState === 'looking' && (
+            <div className="mt-6 text-sm text-gray-600">Looking up existing report…</div>
+          )}
+          {!reportData && prefillLookupState === 'no-match' && (
+            <div className="mt-6 text-sm text-amber-700">No matching report found for the selected URL.</div>
+          )}
+
+          {reportData && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-sm text-gray-600">Generated on {new Date(reportData.generatedAt).toLocaleString()} | Type: {reportData.reportType}</p>
+                </div>
+                <Button variant="outline" onClick={downloadPDF}>Download PDF</Button>
+              </div>
+              <div className="report-content border rounded-lg p-4 bg-white" dangerouslySetInnerHTML={{ __html: reportData.htmlContent }} />
+            </div>
+          )}
         </div>
       </div>
-      <button onClick={generateReport} disabled={isGenerating} className="btn-firecrawl-default inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 h-9 px-4">
-        {isGenerating ? 'Generating...' : 'Generate Report'}
-      </button>
-
-      {reportData && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <p className="text-sm text-gray-600">Generated on {new Date(reportData.generatedAt).toLocaleString()} | Type: {reportData.reportType}</p>
-            </div>
-            <button onClick={downloadPDF} className="border px-3 py-1.5 rounded-md text-sm">Download PDF</button>
-          </div>
-          <div className="report-content border rounded-lg p-4 bg-white" dangerouslySetInnerHTML={{ __html: reportData.htmlContent }} />
-        </div>
-      )}
-      </div>{/* end main content padding */}
     </div>
   );
 }
@@ -381,6 +454,20 @@ export default function BrandMonitorPage() {
       </div>
     );
   }
+
+  // cross-tab state for orchestration
+  const [prefillAeo, setPrefillAeo] = useState<{ url: string; customerName: string } | null>(null);
+  const [prefillBrand, setPrefillBrand] = useState<{ url: string; customerName: string } | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<{ url: string; customerName: string } | null>(null);
+
+  const handleOpenAeoForUrl = (url: string, customerName?: string) => {
+    setPrefillAeo({ url, customerName: (customerName && customerName.trim()) ? customerName : "autouser" });
+    setActiveTab("aeo");
+  };
+  const handleOpenFilesForUrl = (url: string, customerName?: string) => {
+    setPendingFiles({ url, customerName: (customerName && customerName.trim()) ? customerName : "autouser" });
+    setActiveTab("files");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -439,12 +526,23 @@ export default function BrandMonitorPage() {
 
       {/* Tab content area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === "brand" && <BrandMonitorContent session={session} />}
-        {activeTab === "aeo" && <AeoReportTab />}
+        {activeTab === "brand" && <BrandMonitorContent session={session} onOpenAeoForUrl={handleOpenAeoForUrl} onOpenFilesForUrl={handleOpenFilesForUrl} prefillBrand={prefillBrand} />}
+        {activeTab === "aeo" && <AeoReportTab prefill={prefillAeo} onOpenBrandForUrl={(url, customerName) => { setPrefillBrand({ url, customerName: (customerName && customerName.trim()) ? customerName : "autouser" }); setActiveTab("brand"); }} onOpenFilesForUrl={handleOpenFilesForUrl} />}
         {activeTab === "files" && (
           <div className="bg-white rounded-lg border p-8 min-h-[50vh]">
-            <h2 className="text-2xl font-semibold mb-4">Files (coming soon)</h2>
-            <p className="text-gray-600">This section is under development.</p>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-semibold">Files</h2>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setActiveTab("brand")}>Brand Monitor</Button>
+                <Button variant="outline" onClick={() => setActiveTab("aeo")}>AEO Report</Button>
+              </div>
+            </div>
+            {/* Placeholder content for files history/generation */}
+            {pendingFiles ? (
+              <div className="text-gray-600">No files found for {pendingFiles.url}. Generation flow will be added later.</div>
+            ) : (
+              <p className="text-gray-600">This section is under development.</p>
+            )}
           </div>
         )}
         {activeTab === "ugc" && (

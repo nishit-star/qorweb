@@ -44,13 +44,19 @@ interface BrandMonitorProps {
   onCreditsUpdate?: () => void;
   selectedAnalysis?: any;
   onSaveAnalysis?: (analysis: any) => void;
+  initialUrl?: string | null;
+  autoRun?: boolean;
+  onRequireCreditsConfirm?: (required: number, balance: number, proceed: () => void) => void;
 }
 
 export function BrandMonitor({ 
   creditsAvailable = 0, 
   onCreditsUpdate,
   selectedAnalysis,
-  onSaveAnalysis 
+  onSaveAnalysis,
+  initialUrl = null,
+  autoRun = false,
+  onRequireCreditsConfirm,
 }: BrandMonitorProps = {}) {
   const [state, dispatch] = useReducer(brandMonitorReducer, initialBrandMonitorState);
   const [demoUrl] = useState('example.com');
@@ -263,6 +269,43 @@ export function BrandMonitor({
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   }, [url, creditsAvailable, onCreditsUpdate]);
+
+  // Auto-run pipeline when initialUrl/autoRun provided
+  useEffect(() => {
+    const run = async () => {
+      try {
+        if (!initialUrl || !autoRun) return;
+        if (analysis || company || loading || analyzing || preparingAnalysis) return;
+        // set URL
+        dispatch({ type: 'SET_URL', payload: initialUrl });
+        // confirm on low credits
+        if (creditsAvailable < CREDITS_PER_BRAND_ANALYSIS) {
+          if (onRequireCreditsConfirm) {
+            onRequireCreditsConfirm(CREDITS_PER_BRAND_ANALYSIS, creditsAvailable, async () => {
+              await handleScrape();
+              await new Promise(res => setTimeout(res, 50));
+              await handlePrepareAnalysis();
+              await new Promise(res => setTimeout(res, 50));
+              await handleAnalyze();
+            });
+            return;
+          }
+          // if no confirm handler, bail out
+          return;
+        }
+        // proceed automatically
+        await handleScrape();
+        await new Promise(res => setTimeout(res, 50));
+        await handlePrepareAnalysis();
+        await new Promise(res => setTimeout(res, 50));
+        await handleAnalyze();
+      } catch (e) {
+        console.error('[AutoRun] pipeline error', e);
+      }
+    };
+    run();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUrl, autoRun]);
   
   const handlePrepareAnalysis = useCallback(async () => {
     if (!company) return;

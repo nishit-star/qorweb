@@ -92,7 +92,14 @@ export async function POST(request: NextRequest) {
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
-    if (!customerName) customerName = deriveCustomerNameFromUrl(url);
+    // Normalize customerName for consistency
+    if (!customerName || !customerName.trim()) customerName = deriveCustomerNameFromUrl(url);
+    customerName = customerName.trim();
+    // Title-case basic normalization (keep original if already formatted)
+    customerName = customerName
+      .split(/\s+/)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
 
     // Get session via Better Auth
     let userId: string | null = null;
