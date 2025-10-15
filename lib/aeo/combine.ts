@@ -11,6 +11,47 @@ export function renderCombinedHtml(params: { customerName: string; url?: string;
     <meta charset="utf-8" />
     <title>AEO Combined Report - ${customerName}</title>
     <style>
+      /* Print-friendly A3 page setup */
+      @page { size: A3 landscape; margin: 12mm; }
+
+function renderInlineBarChart(labels: string[], values: number[], opts?: {title?: string; width?: number; height?: number; max?: number; colors?: string[]}){
+  const width = opts?.width ?? 520;
+  const height = opts?.height ?? 220;
+  const padding = { top: 24, right: 24, bottom: 36, left: 36 } as const;
+  const innerW = width - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
+  const maxVal = opts?.max ?? Math.max(1, ...values);
+  const barW = innerW / Math.max(1, labels.length);
+  const colors = opts?.colors ?? ['#0a5bd3', '#9b59b6', '#e74c3c', '#2ecc71', '#f1c40f'];
+  const bars = values.map((v, i) => {
+    const h = Math.max(0, Math.round((v / maxVal) * innerH));
+    const x = Math.round(padding.left + i * barW + barW * 0.1);
+    const y = Math.round(padding.top + (innerH - h));
+    const w = Math.round(barW * 0.8);
+    const color = colors[i % colors.length];
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${color}" rx="4" />`;
+  }).join('');
+  const xLabels = labels.map((lab, i) => {
+    const x = Math.round(padding.left + i * barW + barW / 2);
+    const y = height - 8;
+    return `<text x="${x}" y="${y}" text-anchor="middle" font-size="11" fill="#555">${escapeHtml(String(lab))}</text>`;
+  }).join('');
+  const yAxis = `<line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${padding.top + innerH}" stroke="#ccc" />`;
+  const xAxis = `<line x1="${padding.left}" y1="${padding.top + innerH}" x2="${padding.left + innerW}" y2="${padding.top + innerH}" stroke="#ccc" />`;
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(opts?.title || 'bar chart')}">
+    <desc>Bar chart</desc>
+    ${yAxis}${xAxis}${bars}${xLabels}
+  </svg>`;
+}
+
+function escapeHtml(s: string) {
+  return String(s || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'} as any)[c] || c);
+}
+      @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        header { page-break-after: avoid; }
+        .card { page-break-inside: avoid; }
+      }
       body{font-family:Arial,Helvetica,sans-serif;margin:20px;color:#111;background:#fafafa}
       header{border-bottom:2px solid #0a5bd3;padding-bottom:10px;margin-bottom:20px}
       .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
@@ -42,7 +83,7 @@ export function renderCombinedHtml(params: { customerName: string; url?: string;
       </div>
       <div class="card">
         <h2>Status Codes</h2>
-        <canvas id="statusChart" height="180"></canvas>
+        ${renderInlineBarChart(labels, values, { width: 520, height: 220, title: 'Pages by Status' })}
       </div>
       <div class="card">
         <h2>Top Insights</h2>
@@ -53,22 +94,6 @@ export function renderCombinedHtml(params: { customerName: string; url?: string;
     </section>
 
     ${sections.join('\n')}
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script>
-      (function(){
-        const ctx = document.getElementById('statusChart');
-        if (!ctx) return;
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: ${JSON.stringify(labels)},
-            datasets: [{ label: 'Pages', data: ${JSON.stringify(values)}, backgroundColor: '#0a5bd3' }]
-          },
-          options: { scales: { y: { beginAtZero: true } } }
-        });
-      })();
-    </script>
   </body>
   </html>`;
 }

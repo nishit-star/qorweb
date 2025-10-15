@@ -141,6 +141,13 @@ export function renderAeoJsonToHtml(data: AeoModelOutput | AeoModelOutput[] | st
       <meta charset="utf-8" />
       <title>AEO Audit (AI) - ${escapeHtml(customerName)}</title>
       <style>
+      /* Print-friendly A3 page setup */
+      @page { size: A3 landscape; margin: 12mm; }
+      @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        header { page-break-after: avoid; }
+        .card { page-break-inside: avoid; }
+      }
       /* inlined report_style.css */
       /* ===============================
 Global Layout
@@ -192,12 +199,12 @@ header p {margin:5px 0 0;font-size:0.95em;color:#e4e6eb}
           <h2>Visuals</h2>
           <div class="charts-row">
             <div class="chart">
-              <h3>Schema Status</h3>
+              <h3>Schema Status Counts</h3>
               ${renderBarChart(labels, values, { title: 'Schemas', width: 360, height: 160 })}
             </div>
             <div class="chart">
-              <h3>Readiness Overview</h3>
-              ${renderBarChart(radarLabels, radarValues, { title: 'Scores', width: 360, height: 160, max: 100, colors: ['#3498db'] })}
+              <h3>AEO Readiness Radar</h3>
+              ${renderRadarChart(radarLabels, radarValues, { width: 360, height: 260, max: 100 })}
             </div>
             <div class="chart">
               <h3>Overall Gauge</h3>
@@ -226,6 +233,20 @@ header p {margin:5px 0 0;font-size:0.95em;color:#e4e6eb}
         ${sections}
       </div>
 
+      <script type="application/json" id="aeo-metrics">${escapeHtml(JSON.stringify({
+        schemaCompleteness: {
+          counts: summary.schemaCounts,
+          totalSchemas: summary.totalSchemas
+        },
+        readiness: {
+          structuredCoverage: summary.scores.structuredCoverage || 0,
+          unstructuredCoverage: summary.scores.unstructuredCoverage || 0,
+          optimizationOpportunities: summary.scores.optimizationOpportunities || 0,
+          overallAEOReadiness: summary.scores.overallAEOReadiness || 0
+        },
+        unstructuredDistribution: summary.unstructuredCounts,
+        optimizationCount: summary.optimizationCount
+      }))}</script>
 
     </body>
   </html>`;
@@ -324,6 +345,54 @@ function renderPieChart(labels: string[], values: number[], opts?: {width?: numb
     <desc>Pie chart</desc>
     ${slices.join('')}
     ${legend}
+  </svg>`;
+}
+
+function renderRadarChart(labels: string[], values: number[], opts?: { width?: number; height?: number; max?: number }){
+  const width = opts?.width ?? 360;
+  const height = opts?.height ?? 260;
+  const cx = width/2, cy = height/2 + 10;
+  const r = Math.min(width, height)/2 - 20;
+  const maxVal = opts?.max ?? 100;
+  const N = Math.max(1, labels.length);
+  const angleStep = (Math.PI * 2) / N;
+  const toPoint = (i: number, v: number) => {
+    const ang = -Math.PI/2 + i*angleStep;
+    const radius = r * Math.max(0, Math.min(1, v / maxVal));
+    const x = cx + radius * Math.cos(ang);
+    const y = cy + radius * Math.sin(ang);
+    return {x, y};
+  };
+  // grid (concentric polygons)
+  const rings = 4;
+  const grid = Array.from({length: rings}, (_,ri)=>{
+    const frac = (ri+1)/rings;
+    const pts = Array.from({length:N}, (_,i)=>{
+      const ang = -Math.PI/2 + i*angleStep;
+      const x = cx + r*frac*Math.cos(ang);
+      const y = cy + r*frac*Math.sin(ang);
+      return `${x},${y}`;
+    }).join(' ');
+    return `<polygon points="${pts}" fill="none" stroke="#eaecef" stroke-width="1" />`;
+  }).join('');
+  // axes and labels
+  const axes = labels.map((lab, i)=>{
+    const end = toPoint(i, maxVal);
+    const lx = cx + (r+12) * Math.cos(-Math.PI/2 + i*angleStep);
+    const ly = cy + (r+12) * Math.sin(-Math.PI/2 + i*angleStep);
+    return `<line x1="${cx}" y1="${cy}" x2="${end.x}" y2="${end.y}" stroke="#d0d7de" />
+            <text x="${lx}" y="${ly}" font-size="10" fill="#555" text-anchor="middle" dominant-baseline="middle">${escapeHtml(lab)}</text>`;
+  }).join('');
+  // data polygon
+  const pts = values.map((v,i)=>{
+    const p = toPoint(i, v);
+    return `${p.x},${p.y}`;
+  }).join(' ');
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="readiness radar">
+    <desc>Radar chart</desc>
+    ${grid}
+    ${axes}
+    <polygon points="${pts}" fill="rgba(39, 174, 96, 0.25)" stroke="#27ae60" stroke-width="2" />
   </svg>`;
 }
 

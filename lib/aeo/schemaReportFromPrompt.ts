@@ -70,6 +70,13 @@ export function renderSchemaAuditToHtml(input: SchemaAuditOutput | string, custo
       <meta charset="utf-8" />
       <title>Schema Audit - ${escapeHtml(customerName)}</title>
       <style>
+      /* Print-friendly A3 page setup */
+      @page { size: A3 landscape; margin: 12mm; }
+      @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        header { page-break-after: avoid; }
+        .card { page-break-inside: avoid; }
+      }
       /* inlined report_style.css (subset used) */
 body {font-family:'Segoe UI','Roboto',Arial,sans-serif;margin:0;padding:0;background:#f4f6f9;color:#333}
 header {background:#1877f2;color:white;padding:20px 0;text-align:center}
@@ -110,11 +117,10 @@ header p {margin:5px 0 0;font-size:0.95em;color:#e4e6eb}
 
         <section class="card">
           <h2>Optimized Schema JSON</h2>
-          <details><summary>View Schema</summary><pre>${escapeHtml(ldjson)}</pre></details>
+          <pre>${escapeHtml(ldjson)}</pre>
           <script type="application/ld+json">${escapeHtml(ldjson)}</script>
         </section>
       </div>
-      <script src="./chart.umd.min.js"></script>
     </body>
   </html>`;
 }

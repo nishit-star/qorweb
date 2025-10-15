@@ -205,6 +205,150 @@ function BrandMonitorContent({ session }: { session: any }) {
 }
 
 /* --------------------- Tabbed Page wrapper --------------------- */
+function AeoReportTab() {
+  const [customerName, setCustomerName] = useState('');
+  const [url, setUrl] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [reportData, setReportData] = useState<{ htmlContent: string; customerName: string; reportType: string; generatedAt: string } | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [reports, setReports] = useState<Array<{ id: string; customerName: string; url: string; createdAt: string }>>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+
+  const fetchReports = async () => {
+    setLoadingReports(true);
+    try {
+      const res = await fetch('/api/aeo-report/list');
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.reports)) {
+        setReports(data.reports);
+      }
+    } catch (e) {
+      // silent fail
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  // load on mount
+  useEffect(() => { fetchReports(); }, []);
+
+  const generateReport = async () => {
+    if (!customerName.trim() || !url.trim()) return;
+    setIsGenerating(true);
+    try {
+      const res = await fetch('/api/aeo-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerName: customerName.trim(), url: url.trim(), reportType: 'combined' })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate report');
+      setReportData(data);
+      // refresh list so the new report appears in sidebar
+      fetchReports();
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleOpenReport = async (id: string) => {
+    try {
+      const res = await fetch(`/api/aeo-report/view?id=${encodeURIComponent(id)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load report');
+      setReportData({ htmlContent: data.html, customerName: data.customerName, reportType: 'combined-ai', generatedAt: data.createdAt });
+      setSidebarOpen(false);
+    } catch (e) {
+      // no-op
+    }
+  };
+
+  const downloadPDF = async () => {
+    if (!reportData) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const html = `<!DOCTYPE html><html><head><title>AEO Report - ${reportData.customerName}</title>
+      <style>@page{size:A3 landscape;margin:12mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.card{page-break-inside:avoid}}</style>
+    </head><body>
+      <div class="header" style="text-align:center;margin-bottom:20px;border-bottom:2px solid #004d99;padding-bottom:10px">
+        <h1 style="margin:0">AEO Report</h1>
+        <p style="margin:6px 0 0">Customer: ${reportData.customerName} | Generated: ${new Date(reportData.generatedAt).toLocaleString()}</p>
+      </div>
+      ${reportData.htmlContent}
+    </body></html>`;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.onload = () => { setTimeout(() => { printWindow.print(); printWindow.close(); }, 500); };
+  };
+
+  return (
+    <div className="relative min-h-[60vh] bg-white rounded-lg border">
+      {/* Sidebar Toggle Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className={`absolute top-3 z-10 m-4 p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 border border-gray-200 ${sidebarOpen ? 'left-[324px]' : 'left-4'}`}
+        aria-label="Toggle sidebar"
+      >
+        {sidebarOpen ? (<X className="h-5 w-5 text-gray-600" />) : (<Menu className="h-5 w-5 text-gray-600" />)}
+      </button>
+
+      {/* Sidebar */}
+      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} bg-white border-r overflow-hidden flex flex-col transition-all duration-200 h-full absolute left-0 top-0`}> 
+        <div className="p-4 border-b">
+          <div className="font-semibold">Previous AEO Reports</div>
+        </div>
+        <div className="overflow-y-auto flex-1">
+          {loadingReports ? (
+            <div className="p-4 text-center text-gray-500">Loading...</div>
+          ) : reports.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">No reports yet</div>
+          ) : (
+            <div className="space-y-1 p-2">
+              {reports.map(r => (
+                <div key={r.id} className="p-3 rounded-lg cursor-pointer hover:bg-gray-100" onClick={() => handleOpenReport(r.id)}>
+                  <p className="font-medium truncate">{r.customerName || 'Untitled'}</p>
+                  <p className="text-sm text-gray-500 truncate">{r.url}</p>
+                  <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="p-8">
+      <h2 className="text-2xl font-semibold mb-4">.</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="aeoCustomer">Customer Name *</label>
+          <input id="aeoCustomer" className="border rounded-md px-3 py-2 w-full" placeholder="Enter customer name" value={customerName} onChange={e=>setCustomerName(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="aeoUrl">Website URL *</label>
+          <input id="aeoUrl" className="border rounded-md px-3 py-2 w-full" placeholder="https://example.com" value={url} onChange={e=>setUrl(e.target.value)} />
+        </div>
+      </div>
+      <button onClick={generateReport} disabled={isGenerating} className="btn-firecrawl-default inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 h-9 px-4">
+        {isGenerating ? 'Generating...' : 'Generate Report'}
+      </button>
+
+      {reportData && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="text-sm text-gray-600">Generated on {new Date(reportData.generatedAt).toLocaleString()} | Type: {reportData.reportType}</p>
+            </div>
+            <button onClick={downloadPDF} className="border px-3 py-1.5 rounded-md text-sm">Download PDF</button>
+          </div>
+          <div className="report-content border rounded-lg p-4 bg-white" dangerouslySetInnerHTML={{ __html: reportData.htmlContent }} />
+        </div>
+      )}
+      </div>{/* end main content padding */}
+    </div>
+  );
+}
+
 export default function BrandMonitorPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
@@ -296,20 +440,17 @@ export default function BrandMonitorPage() {
       {/* Tab content area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "brand" && <BrandMonitorContent session={session} />}
-        {activeTab !== "brand" && (
+        {activeTab === "aeo" && <AeoReportTab />}
+        {activeTab === "files" && (
           <div className="bg-white rounded-lg border p-8 min-h-[50vh]">
-            {/* Simple placeholder panel for tabs under development */}
-            <h2 className="text-2xl font-semibold mb-4">
-              {activeTab === "aeo"
-                ? "AEO Report (coming soon)"
-                : activeTab === "files"
-                ? "Files (coming soon)"
-                : "UGC (coming soon)"}
-            </h2>
-            <p className="text-gray-600">
-              This section is under development. We'll add the {activeTab === "aeo" ? "AEO Report" : activeTab === "files" ? "Files" : "UGC"}{" "}
-              functionality here soon.
-            </p>
+            <h2 className="text-2xl font-semibold mb-4">Files (coming soon)</h2>
+            <p className="text-gray-600">This section is under development.</p>
+          </div>
+        )}
+        {activeTab === "ugc" && (
+          <div className="bg-white rounded-lg border p-8 min-h-[50vh]">
+            <h2 className="text-2xl font-semibold mb-4">UGC (coming soon)</h2>
+            <p className="text-gray-600">This section is under development.</p>
           </div>
         )}
       </div>

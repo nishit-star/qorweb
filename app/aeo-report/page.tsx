@@ -172,9 +172,8 @@ export default function AEOReportPage() {
         </div>
 
         <Tabs defaultValue="generate" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="generate">Generate New Report</TabsTrigger>
-            <TabsTrigger value="view">View Existing Report</TabsTrigger>
           </TabsList>
 
           <TabsContent value="generate" className="space-y-6">
@@ -228,45 +227,7 @@ export default function AEOReportPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="view" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Load Existing Report</CardTitle>
-                <CardDescription>
-                  Load a previously generated report by customer name
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="existingCustomerName">Customer Name</Label>
-                  <Input
-                    id="existingCustomerName"
-                    placeholder="Enter customer name"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                  />
-                </div>
 
-                <Button 
-                  onClick={loadExistingReport} 
-                  disabled={isLoading}
-                  className="w-full md:w-auto"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading Report...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Load Report
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
 
         {error && (
