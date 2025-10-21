@@ -213,7 +213,7 @@ export function ProviderRankingsTabs({
                           className={`
                             ${idx > 0 ? 'border-t border-gray-200' : ''}
                             ${competitor.isOwn 
-                ? 'bg-[#155DFC]'
+                ? 'bg-[rgba(21,93,252,0.5)]'
                               : 'hover:bg-gray-50 transition-colors'
                             }
                           `}
@@ -262,7 +262,7 @@ export function ProviderRankingsTabs({
             <p className="text-xs text-gray-500 mb-1">Competitors</p>
             <p className="text-lg font-semibold text-black">{competitors.length}</p>
           </div>
-          <div className="bg-[#155DFC] rounded-lg p-4 text-center">
+          <div className="bg-[rgba(21,93,252,0.5)] rounded-lg p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">{brandName} Rank</p>
             <p className="text-lg font-semibold text-black">
               #{brandRank}

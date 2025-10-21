@@ -261,6 +261,8 @@ Rules:
 - Make prompts relevant to the brand's specific market and offerings
 - Use natural language people would actually search for
 - Avoid generic terms like "best company" or "top brand"
+- Do not compare competitors against each other, only against the brand
+- Do not compare the products or services of competitors against each other
 
 Company Info:
 Name: ${brandName}

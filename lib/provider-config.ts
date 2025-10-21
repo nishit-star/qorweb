@@ -198,15 +198,15 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         supportsWebSearch: true,
       },
       {
-        id: 'gemini-2.0-flash-exp',
-        name: 'Gemini 2.0 Flash Experimental',
+        id: 'gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
         maxTokens: 1000000,
         supportsFunctionCalling: true,
         supportsStructuredOutput: true,
         supportsWebSearch: true,
       },
     ],
-    defaultModel: 'gemini-2.5-flash',
+    defaultModel: 'gemini-2.0-flash',
     capabilities: {
       webSearch: true, // Native search grounding
       functionCalling: true,
@@ -219,7 +219,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       
       // Try the requested model first, then fallback to known working models
       const requestedModel = modelId || PROVIDER_CONFIGS.google.defaultModel;
-      const fallbackModels = ['gemini-1.5-pro-latest', 'gemini-1.5-flash-latest', 'gemini-pro'];
+      const fallbackModels = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-pro'];
       
       // If requested model is not in fallback list, try it first
       const modelsToTry = requestedModel && !fallbackModels.includes(requestedModel) 
