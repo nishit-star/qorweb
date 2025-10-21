@@ -82,7 +82,8 @@ export function AnalysisProgressSection({
 }: AnalysisProgressSectionProps) {
   // Display only the provided prompts. When backend generates prompts, they will stream in via SSE and update this list.
   const displayPrompts = prompts.length > 0 ? prompts : customPrompts;
-  
+  console.log('++++++++++++++++++++++++++++++++++++++'+prompts);
+  console.log('++++++++++++++++++++++++++++++++++++++'+customPrompts);
   return (
     <div className="flex items-center justify-center animate-panel-in">
       <div className="max-w-4xl w-full">

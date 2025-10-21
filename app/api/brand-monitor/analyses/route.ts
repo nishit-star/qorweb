@@ -50,6 +50,21 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Ensure favicon mirrors logo when logo is present and they differ
+    try {
+      if (body?.analysisData?.company) {
+        const company = body.analysisData.company;
+        const logo = company.logo;
+        const favicon = company.favicon;
+        if (logo && (!favicon || favicon !== logo)) {
+          body.analysisData.company.favicon = logo;
+        }
+      }
+    } catch (e) {
+      // Non-fatal: if the structure isn't as expected, continue without mutation
+      console.warn('[Brand Analyses] Could not normalize favicon field:', e);
+    }
+
     const [analysis] = await executeWithRetry(async () => {
       return await db.insert(brandAnalyses).values({
         userId: sessionResponse.user.id,

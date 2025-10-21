@@ -127,6 +127,7 @@ export function VisibilityScoreTab({
                 );
                 const faviconUrl = competitorData?.url ? 
                   `https://www.google.com/s2/favicons?domain=${competitorData.url}&sz=64` : null;
+                const logoGuess = competitorData?.url ? `https://${competitorData.url.replace(/^https?:\/\//, '')}/apple-touch-icon.png` : null;
                 
                 const color = competitor.isOwn ? '#155DFC' : 
                   ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1', '#14b8a6', '#f43f5e'][idx % 8];
@@ -145,6 +146,22 @@ export function VisibilityScoreTab({
                             alt={competitor.name}
                             className="w-4 h-4 object-contain"
                             onError={(e) => {
+                              // Try logo guess fallback
+                              if (logoGuess) {
+                                (e.currentTarget as HTMLImageElement).src = logoGuess;
+                              } else {
+                                e.currentTarget.style.display = 'none';
+                                const fallback = e.currentTarget.nextSibling as HTMLDivElement;
+                                if (fallback) fallback.style.display = 'flex';
+                              }
+                            }}
+                          />
+                        ) : logoGuess ? (
+                          <img 
+                            src={logoGuess}
+                            alt={competitor.name}
+                            className="w-4 h-4 object-contain"
+                            onError={(e) => {
                               e.currentTarget.style.display = 'none';
                               const fallback = e.currentTarget.nextSibling as HTMLDivElement;
                               if (fallback) fallback.style.display = 'flex';
@@ -154,7 +171,7 @@ export function VisibilityScoreTab({
                         <div className={`w-full h-full ${
                           competitor.isOwn ? 'bg-[#155DFC]' : 'bg-gray-300'
                         } flex items-center justify-center text-white text-[8px] font-bold rounded`} 
-                        style={{ display: faviconUrl ? 'none' : 'flex' }}>
+                        style={{ display: (faviconUrl || logoGuess) ? 'none' : 'flex' }}>
                           {competitor.name.charAt(0)}
                         </div>
                       </div>

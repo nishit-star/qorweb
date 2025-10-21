@@ -419,11 +419,16 @@ export function BrandMonitor({
       onCreditsUpdate();
     }
 
-    // Collect all prompts (default + custom)
-    // Remove hardcoded default prompts and rely on backend to generate prompts dynamically
-    // If user added any custom prompts, they will be sent; otherwise, prompts are omitted so backend generates them
-    const userPrompts = customPrompts.map(p => p.trim());
-    dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: userPrompts });
+    // Collect prompts from backend-generated (analyzingPrompts) and user custom prompts
+    // We removed hardcoded defaults; ensure we merge backend-provided prompts with custom ones.
+    const backendPrompts = (analyzingPrompts || []).map(p => p.trim()).filter(Boolean);
+    const userPrompts = customPrompts.map(p => p.trim()).filter(Boolean);
+    const mergedPrompts = Array.from(new Set([...(backendPrompts || []), ...userPrompts]));
+
+    // Update analyzingPrompts in state so AnalysisProgressSection shows all of them
+    if (mergedPrompts.length > 0) {
+      dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: mergedPrompts });
+    }
 
     console.log('Starting analysis...');
     
@@ -438,13 +443,11 @@ export function BrandMonitor({
     }});
     dispatch({ type: 'SET_ANALYSIS_TILES', payload: [] });
     
-    // Initialize prompt completion status using prompts from state
+    // Initialize prompt completion status using merged prompts
     const initialStatus: any = {};
     const expectedProviders = getEnabledProviders().map(config => config.name);
 
-    const promptsForStatus = (analyzingPrompts?.length ? analyzingPrompts : userPrompts)
-      .map(p => p.trim())
-      .filter(Boolean);
+    const promptsForStatus = mergedPrompts;
 
     promptsForStatus.forEach(prompt => {
       initialStatus[prompt] = {};
@@ -457,9 +460,7 @@ export function BrandMonitor({
     try {
       // Build payload and use relative path to avoid cross-origin issues
       const analyzeUrl = '/api/brand-monitor/analyze';
-      const promptsToSend = (analyzingPrompts?.length ? analyzingPrompts : userPrompts)
-        .map(p => p.trim())
-        .filter(Boolean);
+      const promptsToSend = mergedPrompts;
 
       const payload: any = {
         company,
