@@ -264,6 +264,7 @@ export function ProviderRankingsTabs({
                   </tbody>
                 </table>
               </div>
+            
             </TabsContent>
           ))}
         </Tabs>
@@ -299,6 +300,19 @@ export function ProviderRankingsTabs({
             <p className="text-lg font-semibold text-black">{sentimentScore}%</p>
           </div>
         </div>
+
+        <div className="mt-4 text-red-500 text-sm space-y-1">
+                <p><strong>Visibility:</strong> How often your brand appears in search results for the tracked keywords.</p>
+                <p><strong>Share of Voice:</strong> Your brand&apos;s percentage of mentions compared to competitors across the analyzed content.</p>
+                <p><strong>Sentiment:</strong> The overall emotional tone (positive, negative, neutral) of the content where your brand is mentioned.</p>
+                <br />
+                <p><strong>Formulas:</strong></p>
+                <p><strong>Visibility </strong>= (Number of responses citing your domain) ÷ (Total responses)</p>
+                <p><strong>Share of Voice </strong>= (Your brand mentions in answers) ÷ (Total brand mentions for that prompt)</p>
+                <p><strong>Sentiment Score </strong> = (Positive mentions - Negative mentions) ÷ (Total mentions)</p>
+                
+  
+              </div>
       </CardContent>
     </Card>
   );

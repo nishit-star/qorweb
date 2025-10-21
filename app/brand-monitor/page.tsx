@@ -405,7 +405,7 @@ function AeoReportTab({ prefill, onOpenBrandForUrl, onOpenFilesForUrl }: { prefi
             <div className="mt-6 text-sm text-gray-600">Looking up existing report…</div>
           )}
           {!reportData && prefillLookupState === 'no-match' && (
-            <div className="mt-6 text-sm text-amber-700">No matching report found for the selected URL.</div>
+            <div className="mt-6 text-sm text-blue-700">No matching report found for the selected URL.</div>
           )}
 
           {reportData && (
