@@ -222,7 +222,7 @@ export function AnalysisProgressSection({
                 <button
                   onClick={onAddPromptClick}
                   disabled={analyzing}
-                  className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1 gap-1"
+                  className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#155DFC] text-[#fff] hover:bg-[#090376] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1 gap-1"
                 >
                   <Plus className="h-4 w-4" />
                   Add Prompt
@@ -234,7 +234,7 @@ export function AnalysisProgressSection({
                 <button
                   onClick={onStartAnalysis}
                   disabled={analyzing}
-                  className="h-10 px-6 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#090376,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(23, 13, 242, 58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#090376,_0px_1px_3px_0px_rgba(23, 13, 242, 40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#090376,_0px_1px_2px_0px_rgba(23, 13, 242, 30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
+                  className="h-10 px-6 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#155DFC] text-white hover:bg-[#090376] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#090376,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(23, 13, 242, 58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#090376,_0px_1px_3px_0px_rgba(23, 13, 242, 40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#090376,_0px_1px_2px_0px_rgba(23, 13, 242, 30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
                 >
                   {analyzing ? (
                     <>

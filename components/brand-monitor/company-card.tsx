@@ -121,7 +121,7 @@ export function CompanyCard({
             <button 
               onClick={onAnalyze} 
               disabled={analyzing}
-              className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1"
+              className="h-9 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#155DFC] text-[#fff] hover:bg-[#090376] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100 px-4 py-1"
             >
               {analyzing ? (
                 <>
@@ -134,7 +134,7 @@ export function CompanyCard({
             </button>
           </div>
 
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+          <p className="text-sm text-gray-600 mb-4 ">
             {company.description}
           </p>
 
@@ -243,7 +243,7 @@ export function CompanyCard({
                 {onAddCompetitor && (
                   <button
                     onClick={onAddCompetitor}
-                    className="h-10 px-4 rounded-[10px] text-sm font-medium flex items-center gap-1 transition-all duration-200 bg-[#155DFC] text-white hover:bg-[#665DFF] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#110A8B,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(23, 13, 242, 58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#110A8B,_0px_1px_3px_0px_rgba(23, 13, 242, 40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#110A8B,_0px_1px_2px_0px_rgba(23, 13, 242, 30%)]"
+                    className="h-10 px-4 rounded-[10px] text-sm font-medium flex items-center gap-1 transition-all duration-200 bg-[#155DFC] text-white hover:bg-[#090376] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#110A8B,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(23, 13, 242, 58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#110A8B,_0px_1px_3px_0px_rgba(23, 13, 242, 40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#110A8B,_0px_1px_2px_0px_rgba(23, 13, 242, 30%)]"
                   >
                     <Plus className="w-4 h-4" />
                     Add Competitor
@@ -255,7 +255,7 @@ export function CompanyCard({
                 {onContinueToAnalysis && (
                   <button
                     onClick={onContinueToAnalysis}
-                    className="h-10 px-6 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
+                    className="h-10 px-6 rounded-[10px] text-sm font-medium flex items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#155DFC] text-[#fff] hover:bg-[#090376] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100"
                   >
                     Continue to Analysis
                   </button>
