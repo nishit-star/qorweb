@@ -212,7 +212,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       functionCalling: true,
       structuredOutput: true,
       streamingResponse: true,
-      maxRequestsPerMinute: 60,
+      maxRequestsPerMinute: 200,
     },
     getModel: (modelId?: string, options?: any) => {
       if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) return null;
@@ -232,7 +232,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       console.log(`[Google] Using model: ${modelToUse}`);
       
       return google(modelToUse, {
-        useSearchGrounding: options?.useWebSearch || false,
+        useSearchGrounding: options?.useWebSearch || true,
       });
     },
     isConfigured: () => !!process.env.GOOGLE_GENERATIVE_AI_API_KEY,

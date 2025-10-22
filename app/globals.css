@@ -123,12 +123,12 @@
 
 /* Firecrawl button styles */
 .btn-firecrawl-default {
-  background-color: #18181b;
+  background-color: #155DFC;
   color: white;
   box-shadow: inset 0px -2px 0px 0px #18181b, 0px 1px 6px 0px rgba(24, 24, 27, 58%);
 }
 .btn-firecrawl-default:hover {
-  background-color: #27272a;
+  background-color: #090376;
   transform: translateY(1px) scale(0.98);
   box-shadow: inset 0px -1px 0px 0px #18181b, 0px 1px 3px 0px rgba(24, 24, 27, 40%);
 }

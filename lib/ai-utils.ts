@@ -81,6 +81,7 @@ Based on this company's specific business model and target market, identify ONLY
 2. Target the SAME customer segment
 3. Have a SIMILAR business model (e.g., if it's a DTC brand, find other DTC brands)
 4. Actually compete for the same customers
+5. Identify location of the company ${company.name} and get  one or two competitors from same city or region  
 
 For example:
 - If it's a DTC underwear brand, find OTHER DTC underwear brands (not department stores)
