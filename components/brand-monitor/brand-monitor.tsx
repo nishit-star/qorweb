@@ -587,24 +587,35 @@ export function BrandMonitor({
       {/* Prompts List Section */}
       {showPromptsList && company && !analysis && (
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-          <AnalysisProgressSection
-          company={company}
-          analyzing={analyzing}
-          identifiedCompetitors={identifiedCompetitors}
-          scrapingCompetitors={scrapingCompetitors}
-          analysisProgress={analysisProgress}
-          prompts={analyzingPrompts}
-          customPrompts={customPrompts}
-          promptCompletionStatus={promptCompletionStatus}
-          onRemoveCustomPrompt={(prompt) => {
-            dispatch({ type: 'SET_CUSTOM_PROMPTS', payload: customPrompts.filter(p => p !== prompt) });
-          }}
-          onAddPromptClick={() => {
-            dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: true } });
-            dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
-          }}
-          onStartAnalysis={handleAnalyze}
-        />
+            <AnalysisProgressSection
+                company={company}
+                analyzing={analyzing}
+                identifiedCompetitors={identifiedCompetitors}
+                scrapingCompetitors={scrapingCompetitors}
+                analysisProgress={analysisProgress}
+                prompts={analyzingPrompts}
+                customPrompts={customPrompts}
+                promptCompletionStatus={promptCompletionStatus}
+                onRemoveCustomPrompt={(prompt) => {
+                    // Remove from customPrompts (if it's there)
+                    const updatedCustomPrompts = customPrompts.filter(p => p !== prompt);
+                    dispatch({ type: 'SET_CUSTOM_PROMPTS', payload: updatedCustomPrompts });
+
+                    // Remove from analyzingPrompts (works for both custom and pre-generated)
+                    const updatedAnalyzingPrompts = analyzingPrompts.filter(p => p !== prompt);
+                    dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: updatedAnalyzingPrompts });
+
+                    console.log('✅ Prompt removed:', prompt);
+                }}
+
+                onAddPromptClick={() => {
+                    dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: true } });
+                    dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
+                }}
+                onStartAnalysis={handleAnalyze}
+            />
+
+
         </div>
       )}
 
@@ -759,7 +770,7 @@ export function BrandMonitor({
                     dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: false } });
                     dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
 
-                    console.log('✅ Custom prompt added and now visible:', newPrompt);
+                    console.log('✅ Custom prompt added:', newPrompt);
                 }
             }}
             onClose={() => {
@@ -767,6 +778,7 @@ export function BrandMonitor({
                 dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
             }}
         />
+
 
 
         <AddCompetitorModal

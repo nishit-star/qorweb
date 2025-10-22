@@ -80,9 +80,9 @@ export function AnalysisProgressSection({
   onAddPromptClick,
   onStartAnalysis
 }: AnalysisProgressSectionProps) {
-  // Display only the provided prompts. When backend generates prompts, they will stream in via SSE and update this list.
-  const displayPrompts = prompts.length > 0 ? prompts : customPrompts;
-  console.log('++++++++++++++++++++++++++++++++++++++'+prompts);
+    // prompts already includes custom prompts merged from brand-monitor.tsx
+    const displayPrompts = prompts;
+    console.log('++++++++++++++++++++++++++++++++++++++'+prompts);
   console.log('++++++++++++++++++++++++++++++++++++++'+customPrompts);
   return (
     <div className="flex items-center justify-center animate-panel-in">
@@ -164,17 +164,19 @@ export function AnalysisProgressSection({
                             {prompt}
                           </p>
 
-                          {!analyzing && isCustom && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onRemoveCustomPrompt(prompt);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </button>
-                          )}
+                            {!analyzing && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemoveCustomPrompt(prompt);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
+                                    title={isCustom ? "Remove custom prompt" : "Remove prompt"}
+                                >
+                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                </button>
+                            )}
+
                         </div>
                         
                         {/* Provider icons and status */}
