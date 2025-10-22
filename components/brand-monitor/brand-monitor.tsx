@@ -421,16 +421,23 @@ export function BrandMonitor({
 
     // Collect prompts from backend-generated (analyzingPrompts) and user custom prompts
     // We removed hardcoded defaults; ensure we merge backend-provided prompts with custom ones.
-    const backendPrompts = (analyzingPrompts || []).map(p => p.trim()).filter(Boolean);
-    const userPrompts = customPrompts.map(p => p.trim()).filter(Boolean);
-    const mergedPrompts = Array.from(new Set([...(backendPrompts || []), ...userPrompts]));
 
-    // Update analyzingPrompts in state so AnalysisProgressSection shows all of them
-    if (mergedPrompts.length > 0) {
+      const backendPrompts = (analyzingPrompts || []).map(p => p.trim()).filter(Boolean);
+      const userPrompts = customPrompts.map(p => p.trim()).filter(Boolean);
+      const mergedPrompts = Array.from(new Set([...backendPrompts, ...userPrompts]));
+
+    // CRITICAL: Update state IMMEDIATELY so prompts list shows all prompts
       dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: mergedPrompts });
-    }
 
-    console.log('Starting analysis...');
+      console.log('🔍 Analysis Prompts Debug:', {
+          backendPrompts: backendPrompts.length,
+          customPrompts: userPrompts.length,
+          mergedTotal: mergedPrompts.length,
+          allPrompts: mergedPrompts
+      });
+
+
+      console.log('Starting analysis...');
     
     dispatch({ type: 'SET_ANALYZING', payload: true });
     dispatch({ type: 'SET_ANALYSIS_PROGRESS', payload: {
@@ -457,18 +464,19 @@ export function BrandMonitor({
     });
     dispatch({ type: 'SET_PROMPT_COMPLETION_STATUS', payload: initialStatus });
 
-    try {
+
       // Build payload and use relative path to avoid cross-origin issues
-      const analyzeUrl = '/api/brand-monitor/analyze';
-      const promptsToSend = mergedPrompts;
+        try {
+            // Build payload and use relative path to avoid cross-origin issues
+            const analyzeUrl = '/api/brand-monitor/analyze';
 
-      const payload: any = {
-        company,
-        competitors: identifiedCompetitors,
-        ...(promptsToSend.length ? { prompts: promptsToSend } : {}),
-      };
+            const payload: any = {
+                company,
+                competitors: identifiedCompetitors,
+                prompts: mergedPrompts, // Always send merged prompts (backend + custom)
+            };
 
-      console.debug('[ANALYZE] Posting to', analyzeUrl, 'payload:', payload);
+            console.debug('[ANALYZE] Posting to', analyzeUrl, 'payload:', payload);
 
       await startSSEConnection(analyzeUrl, {
         method: 'POST',
@@ -479,7 +487,7 @@ export function BrandMonitor({
       dispatch({ type: 'SET_ANALYZING', payload: false });
     }
   }, [company, customPrompts, identifiedCompetitors, startSSEConnection, creditsAvailable]);
-  
+
   const handleRestart = useCallback(() => {
     dispatch({ type: 'RESET_STATE' });
     hasSavedRef.current = false;
@@ -732,24 +740,36 @@ export function BrandMonitor({
       )}
       
       {/* Modals */}
-      <AddPromptModal
-        isOpen={showAddPromptModal}
-        promptText={newPromptText}
-        onPromptTextChange={(text) => dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: text })}
-        onAdd={() => {
-          if (newPromptText.trim()) {
-            dispatch({ type: 'ADD_CUSTOM_PROMPT', payload: newPromptText.trim() });
-            dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: false } });
-            dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
-          }
-        }}
-        onClose={() => {
-          dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: false } });
-          dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
-        }}
-      />
+        <AddPromptModal
+            isOpen={showAddPromptModal}
+            promptText={newPromptText}
+            onPromptTextChange={(text) => dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: text })}
+            onAdd={() => {
+                if (newPromptText.trim()) {
+                    const newPrompt = newPromptText.trim();
 
-      <AddCompetitorModal
+                    // Add to custom prompts
+                    dispatch({ type: 'ADD_CUSTOM_PROMPT', payload: newPrompt });
+
+                    // IMMEDIATELY merge into analyzingPrompts so it shows up in the list
+                    const updatedAnalyzingPrompts = [...analyzingPrompts, newPrompt];
+                    dispatch({ type: 'SET_ANALYZING_PROMPTS', payload: updatedAnalyzingPrompts });
+
+                    // Close modal and reset
+                    dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: false } });
+                    dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
+
+                    console.log('✅ Custom prompt added and now visible:', newPrompt);
+                }
+            }}
+            onClose={() => {
+                dispatch({ type: 'TOGGLE_MODAL', payload: { modal: 'addPrompt', show: false } });
+                dispatch({ type: 'SET_NEW_PROMPT_TEXT', payload: '' });
+            }}
+        />
+
+
+        <AddCompetitorModal
         isOpen={showAddCompetitorModal}
         competitorName={newCompetitorName}
         competitorUrl={newCompetitorUrl}
