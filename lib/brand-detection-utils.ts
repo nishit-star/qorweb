@@ -179,108 +179,222 @@ export interface BrandDetectionResult {
 }
 
 export interface BrandDetectionOptions {
-  caseSensitive?: boolean;
-  wholeWordOnly?: boolean;
-  includeVariations?: boolean;
-  customVariations?: string[];
-  excludeNegativeContext?: boolean;
-  includeUrlDetection?: boolean;
-  brandUrls?: string[];
+    caseSensitive?: boolean;
+    wholeWordOnly?: boolean;
+    includeVariations?: boolean;
+    customVariations?: string[];
+    excludeNegativeContext?: boolean;
+    includeUrlDetection?: boolean;
+    brandUrls?: string[];
+    minConfidenceThreshold?: number;
 }
 
+/**
+ * Detects if a brand is mentioned in text using multiple strategies
+ * Enhanced to reduce false positives
+ */
 export function detectBrandMention(
-  text: string, 
-  brandName: string, 
-  options: BrandDetectionOptions = {}
+    text: string,
+    brandName: string,
+    options: BrandDetectionOptions = {}
 ): BrandDetectionResult {
-  const {
-    caseSensitive = false,
-    wholeWordOnly = true,
-    includeVariations = true,
-    customVariations = [],
-    excludeNegativeContext = false
-  } = options;
-  
-  const searchText = caseSensitive ? text : text.toLowerCase();
-  const matches: BrandDetectionResult['matches'] = [];
-  
-  // Generate patterns
-  const patterns = wholeWordOnly 
-    ? createBrandRegexPatterns(brandName, customVariations)
-    : [new RegExp(brandName, caseSensitive ? 'g' : 'gi')];
-  
-  // Search with each pattern
-  patterns.forEach(pattern => {
-    const regex = new RegExp(pattern.source, pattern.flags + 'g');
-    let match;
-    
-    while ((match = regex.exec(searchText)) !== null) {
-      const matchText = match[0];
-      const matchIndex = match.index;
-      
-      // Check for negative context if requested
-      if (excludeNegativeContext) {
-        const contextStart = Math.max(0, matchIndex - 50);
-        const contextEnd = Math.min(searchText.length, matchIndex + matchText.length + 50);
-        const context = searchText.substring(contextStart, contextEnd);
-        
-        const negativePatterns = [
-          /\bnot\s+(?:recommended|good|worth|reliable)/i,
-          /\bavoid\b/i,
-          /\bworse\s+than\b/i,
-          /\binferior\s+to\b/i,
-          /\bdon't\s+(?:use|recommend|like)\b/i
-        ];
-        
-        const hasNegativeContext = negativePatterns.some(np => np.test(context));
-        if (hasNegativeContext) continue;
-      }
-      
-      // Calculate confidence based on match quality
-      let confidence = 0.5; // Base confidence
-      
-      // Exact match (case-insensitive)
-      if (matchText.toLowerCase() === brandName.toLowerCase()) {
-        confidence = 1.0;
-      }
-      // Exact match with suffix
-      else if (matchText.toLowerCase().startsWith(brandName.toLowerCase() + ' ')) {
-        confidence = 0.9;
-      }
-      // Variation match
-      else if (includeVariations) {
-        confidence = 0.7;
-      }
-      
-      matches.push({
-        text: matchText,
-        index: matchIndex,
-        pattern: pattern.source,
-        confidence
-      });
-    }
-  });
-  
-  // Remove duplicate matches at the same position
-  const uniqueMatches = matches.reduce((acc, match) => {
-    const existing = acc.find(m => m.index === match.index);
-    if (!existing || match.confidence > existing.confidence) {
-      return [...acc.filter(m => m.index !== match.index), match];
-    }
-    return acc;
-  }, [] as typeof matches);
-  
-  // Calculate overall confidence
-  const overallConfidence = uniqueMatches.length > 0
-    ? Math.max(...uniqueMatches.map(m => m.confidence))
-    : 0;
-  
-  return {
-    mentioned: uniqueMatches.length > 0,
-    matches: uniqueMatches.sort((a, b) => b.confidence - a.confidence),
-    confidence: overallConfidence
-  };
+    const {
+        caseSensitive = false,
+        wholeWordOnly = true,
+        includeVariations = true,
+        customVariations = [],
+        excludeNegativeContext = false,
+        minConfidenceThreshold = 0.6  // ADD THIS: Minimum confidence to consider a match
+    } = options;
+
+    const searchText = caseSensitive ? text : text.toLowerCase();
+    const matches: BrandDetectionResult['matches'] = [];
+
+    // Generate patterns - but limit variations
+    const patterns = wholeWordOnly
+        ? createBrandRegexPatterns(brandName, customVariations)
+        : [new RegExp(brandName, caseSensitive ? 'g' : 'gi')];
+
+    // Search with each pattern
+    patterns.forEach(pattern => {
+        const regex = new RegExp(pattern.source, pattern.flags + 'g');
+        let match;
+
+        while ((match = regex.exec(searchText)) !== null) {
+            const matchText = match[0];
+            const matchIndex = match.index;
+
+            // ADD: Check if match is within another word (false positive)
+            const beforeChar = matchIndex > 0 ? searchText[matchIndex - 1] : ' ';
+            const afterChar = matchIndex + matchText.length < searchText.length
+                ? searchText[matchIndex + matchText.length]
+                : ' ';
+
+            // Skip if the match is part of a larger word
+            if (/[a-zA-Z0-9]/.test(beforeChar) || /[a-zA-Z0-9]/.test(afterChar)) {
+                continue;
+            }
+
+            // Check for negative context if requested
+            if (excludeNegativeContext) {
+                const contextStart = Math.max(0, matchIndex - 50);
+                const contextEnd = Math.min(searchText.length, matchIndex + matchText.length + 50);
+                const context = searchText.substring(contextStart, contextEnd);
+
+                const negativePatterns = [
+                    /\bnot\s+(?:recommended|good|worth|reliable)/i,
+                    /\bavoid\b/i,
+                    /\bworse\s+than\b/i,
+                    /\binferior\s+to\b/i,
+                    /\bdon't\s+(?:use|recommend|like)\b/i
+                ];
+
+                const hasNegativeContext = negativePatterns.some(np => np.test(context));
+                if (hasNegativeContext) continue;
+            }
+
+            // Calculate confidence based on match quality
+            let confidence = 0.5; // Base confidence
+
+            // Exact match (case-insensitive)
+            if (matchText.toLowerCase() === brandName.toLowerCase()) {
+                confidence = 1.0;
+            }
+            // Exact match with suffix
+            else if (matchText.toLowerCase().startsWith(brandName.toLowerCase() + ' ')) {
+                confidence = 0.9;
+            }
+            // Variation match
+            else if (includeVariations) {
+                confidence = 0.7;
+            }
+
+            // ONLY add matches that meet minimum confidence threshold
+            if (confidence >= minConfidenceThreshold) {
+                matches.push({
+                    text: matchText,
+                    index: matchIndex,
+                    pattern: pattern.source,
+                    confidence
+                });
+            }
+        }
+    });
+
+    // Remove duplicate matches at the same position
+    const uniqueMatches = matches.reduce((acc, match) => {
+        const existing = acc.find(m => m.index === match.index);
+        if (!existing || match.confidence > existing.confidence) {
+            return [...acc.filter(m => m.index !== match.index), match];
+        }
+        return acc;
+    }, [] as typeof matches);
+
+    // Calculate overall confidence
+    const overallConfidence = uniqueMatches.length > 0
+        ? Math.max(...uniqueMatches.map(m => m.confidence))
+        : 0;
+
+    return {
+        mentioned: uniqueMatches.length > 0 && overallConfidence >= minConfidenceThreshold,
+        matches: uniqueMatches.sort((a, b) => b.confidence - a.confidence),
+        confidence: overallConfidence
+    };
 }
+
+// export function detectBrandMention(
+//   text: string,
+//   brandName: string,
+//   options: BrandDetectionOptions = {}
+// ): BrandDetectionResult {
+//   const {
+//     caseSensitive = false,
+//     wholeWordOnly = true,
+//     includeVariations = true,
+//     customVariations = [],
+//     excludeNegativeContext = false
+//   } = options;
+//
+//   const searchText = caseSensitive ? text : text.toLowerCase();
+//   const matches: BrandDetectionResult['matches'] = [];
+//
+//   // Generate patterns
+//   const patterns = wholeWordOnly
+//     ? createBrandRegexPatterns(brandName, customVariations)
+//     : [new RegExp(brandName, caseSensitive ? 'g' : 'gi')];
+//
+//   // Search with each pattern
+//   patterns.forEach(pattern => {
+//     const regex = new RegExp(pattern.source, pattern.flags + 'g');
+//     let match;
+//
+//     while ((match = regex.exec(searchText)) !== null) {
+//       const matchText = match[0];
+//       const matchIndex = match.index;
+//
+//       // Check for negative context if requested
+//       if (excludeNegativeContext) {
+//         const contextStart = Math.max(0, matchIndex - 50);
+//         const contextEnd = Math.min(searchText.length, matchIndex + matchText.length + 50);
+//         const context = searchText.substring(contextStart, contextEnd);
+//
+//         const negativePatterns = [
+//           /\bnot\s+(?:recommended|good|worth|reliable)/i,
+//           /\bavoid\b/i,
+//           /\bworse\s+than\b/i,
+//           /\binferior\s+to\b/i,
+//           /\bdon't\s+(?:use|recommend|like)\b/i
+//         ];
+//
+//         const hasNegativeContext = negativePatterns.some(np => np.test(context));
+//         if (hasNegativeContext) continue;
+//       }
+//
+//       // Calculate confidence based on match quality
+//       let confidence = 0.5; // Base confidence
+//
+//       // Exact match (case-insensitive)
+//       if (matchText.toLowerCase() === brandName.toLowerCase()) {
+//         confidence = 1.0;
+//       }
+//       // Exact match with suffix
+//       else if (matchText.toLowerCase().startsWith(brandName.toLowerCase() + ' ')) {
+//         confidence = 0.9;
+//       }
+//       // Variation match
+//       else if (includeVariations) {
+//         confidence = 0.7;
+//       }
+//
+//       matches.push({
+//         text: matchText,
+//         index: matchIndex,
+//         pattern: pattern.source,
+//         confidence
+//       });
+//     }
+//   });
+//
+//   // Remove duplicate matches at the same position
+//   const uniqueMatches = matches.reduce((acc, match) => {
+//     const existing = acc.find(m => m.index === match.index);
+//     if (!existing || match.confidence > existing.confidence) {
+//       return [...acc.filter(m => m.index !== match.index), match];
+//     }
+//     return acc;
+//   }, [] as typeof matches);
+//
+//   // Calculate overall confidence
+//   const overallConfidence = uniqueMatches.length > 0
+//     ? Math.max(...uniqueMatches.map(m => m.confidence))
+//     : 0;
+//
+//   return {
+//     mentioned: uniqueMatches.length > 0,
+//     matches: uniqueMatches.sort((a, b) => b.confidence - a.confidence),
+//     confidence: overallConfidence
+//   };
+// }
 
 /**
  * Detects multiple brands in text

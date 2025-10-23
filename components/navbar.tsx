@@ -13,7 +13,7 @@ function UserCredits() {
   const { customer } = useCustomer();
   const messageUsage = customer?.features?.messages;
   const remainingMessages = messageUsage ? (messageUsage.balance || 0) : 0;
-  
+
   return (
     <div className="flex items-center text-sm font-medium text-gray-700">
       <span>{remainingMessages}</span>
@@ -68,7 +68,7 @@ export function Navbar() {
                   Brand Monitor
                 </Link>
 
-                
+
               </>
             )}
             <Link
@@ -102,13 +102,13 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <Link 
+                <Link
                   href="/login"
                   className="btn-firecrawl-orange inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-8 px-3"
                 >
                   Login
                 </Link>
-                <Link 
+                <Link
                   href="/register"
                   className="btn-firecrawl-orange inline-flex items-center justify-center whitespace-nowrap rounded-[10px] text-sm font-medium transition-all duration-200 h-8 px-3"
                 >

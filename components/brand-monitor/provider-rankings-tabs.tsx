@@ -14,17 +14,17 @@ const getProviderIcon = (provider: string) => {
   switch (provider) {
     case 'OpenAI':
       return (
-        <img 
-          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1dxbfHSJFAPEGdCLU4o5B" 
-          alt="OpenAI" 
+        <img
+          src="https://cdn.brandfetch.io/idR3duQxYl/theme/dark/symbol.svg?c=1dxbfHSJFAPEGdCLU4o5B"
+          alt="OpenAI"
           className="w-7 h-7"
         />
       );
     case 'Anthropic':
       return (
-        <img 
-          src="https://cdn.brandfetch.io/idmJWF3N06/theme/dark/symbol.svg" 
-          alt="Anthropic" 
+        <img
+          src="https://cdn.brandfetch.io/idmJWF3N06/theme/dark/symbol.svg"
+          alt="Anthropic"
           className="w-6 h-6"
         />
       );
@@ -41,9 +41,9 @@ const getProviderIcon = (provider: string) => {
       );
     case 'Perplexity':
       return (
-        <img 
-          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/icon.png?c=1dxbfHSJFAPEGdCLU4o5B" 
-          alt="Perplexity" 
+        <img
+          src="https://cdn.brandfetch.io/idNdawywEZ/w/800/h/800/theme/dark/icon.png?c=1dxbfHSJFAPEGdCLU4o5B"
+          alt="Perplexity"
           className="w-6 h-6"
         />
       );
@@ -62,23 +62,23 @@ interface ProviderRankingsTabsProps {
 }
 
 // Company cell component with favicon support
-const CompanyCell = ({ 
-  name, 
-  isOwn, 
-  url 
-}: { 
-  name: string; 
-  isOwn?: boolean; 
+const CompanyCell = ({
+  name,
+  isOwn,
+  url
+}: {
+  name: string;
+  isOwn?: boolean;
   url?: string;
 }) => {
   const [faviconError, setFaviconError] = useState(false);
   const [logoFallbackShown, setLogoFallbackShown] = useState(false);
-  
+
   // Generate favicon URL using Google's favicon service
   const faviconUrl = url ? `https://www.google.com/s2/favicons?domain=${url}&sz=64` : null;
   // Derive a possible logo URL from the domain as a last resort
   const logoGuess = url ? `https://${url.replace(/^https?:\/\//, '')}/apple-touch-icon.png` : null;
-  
+
   return (
     <div className="flex items-center gap-2">
       <div className="w-5 h-5 flex items-center justify-center rounded overflow-hidden flex-shrink-0">
@@ -123,16 +123,16 @@ const generateFallbackUrl = (competitorName: string): string | undefined => {
     .replace(/[^a-z0-9\s]/g, '')
     .replace(/\s+/g, '')
     .trim();
-  
+
   if (cleanName.length < 3 || ['inc', 'llc', 'corp', 'company', 'the'].includes(cleanName)) {
     return undefined;
   }
-  
+
   return `${cleanName}.com`;
 };
 
-export function ProviderRankingsTabs({ 
-  providerRankings, 
+export function ProviderRankingsTabs({
+  providerRankings,
   brandName,
   shareOfVoice,
   averagePosition,
@@ -190,9 +190,9 @@ export function ProviderRankingsTabs({
             {providerRankings.map(({ provider }) => {
               // Provider info is now handled by icon mapping directly
               return (
-                <TabsTrigger 
-                  key={provider} 
-                  value={provider} 
+                <TabsTrigger
+                  key={provider}
+                  value={provider}
                   className="text-sm flex items-center justify-center h-full"
                   title={provider}
                 >
@@ -218,10 +218,10 @@ export function ProviderRankingsTabs({
                   <tbody>
                     {competitors.map((competitor, idx) => {
                       const competitorUrl = generateFallbackUrl(competitor.name);
-                      
+
                       return (
-                        <tr 
-                          key={idx} 
+                        <tr
+                          key={idx}
                           className={`
                             ${idx > 0 ? 'border-t border-gray-200' : ''}
                             ${competitor.isOwn 
@@ -234,7 +234,7 @@ export function ProviderRankingsTabs({
                             {idx + 1}
                           </td>
                           <td className="border-r border-gray-200 p-3">
-                            <CompanyCell 
+                            <CompanyCell
                               name={competitor.name}
                               isOwn={competitor.isOwn}
                               url={competitorUrl}
@@ -264,11 +264,11 @@ export function ProviderRankingsTabs({
                   </tbody>
                 </table>
               </div>
-            
+
             </TabsContent>
           ))}
         </Tabs>
-        
+
         {/* Metrics Row at Bottom */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-6 pt-6 border-t">
           <div className="bg-gray-50 rounded-lg p-4 text-center">
@@ -308,11 +308,13 @@ export function ProviderRankingsTabs({
                 <br />
                 <p><strong>Formulas:</strong></p>
                 <p><strong>Visibility </strong>= (Number of responses citing your domain) ÷ (Total responses)</p>
-                <p><strong>Share of Voice </strong>= (Your brand mentions in answers) ÷ (Total brand mentions for that prompt)</p>
-                <p><strong>Sentiment Score </strong> = (Positive mentions - Negative mentions) ÷ (Total mentions)</p>
-                
-  
+                <p><strong>Share of Voice </strong>= (Brand's total mentions / Total mentions across all competitors) × 100</p>
+                <p><strong>Sentiment Score </strong>= (Positive sentiment mentions / Total mentions) × 100</p>
+                <p><strong>AveragePosition  </strong>= Sum of all positions where brand was mentioned / Number of mentions</p>
+
+
               </div>
+
       </CardContent>
     </Card>
   );
