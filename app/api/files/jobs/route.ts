@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { auth } from '@/lib/auth';
 
-const N8N_WEBHOOK = 'https://n8n.welz.in/webhook/2bb2921f-d673-4a5b-8574-cfb9303b0b44';
+const N8N_WEBHOOK = 'https://n8n.welz.in/webhook/2f48da23-976e-4fd0-97da-2cb24c0b3e38';
 const WEBHOOK_SECRET = process.env.FILES_WEBHOOK_SECRET || '';
 
 function hmacSign(input: string, secret: string) {
