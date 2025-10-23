@@ -203,8 +203,8 @@ export function detectBrandMention(
         wholeWordOnly = true,
         includeVariations = true,
         customVariations = [],
-        excludeNegativeContext = false,
-        minConfidenceThreshold = 0.6  // ADD THIS: Minimum confidence to consider a match
+        excludeNegativeContext = true,
+        minConfidenceThreshold = 0.65  // ADD THIS: Minimum confidence to consider a match
     } = options;
 
     const searchText = caseSensitive ? text : text.toLowerCase();

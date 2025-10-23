@@ -79,6 +79,9 @@ function BrandMonitorContent({ session, onOpenAeoForUrl, onOpenFilesForUrl, pref
 
   const handleNewAnalysis = () => {
     setSelectedAnalysisId(null);
+      setTimeout(() => {
+          window.location.hash = '#brand';
+      }, 0);
   };
 
   return (

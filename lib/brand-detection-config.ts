@@ -31,7 +31,7 @@ export const DEFAULT_BRAND_DETECTION_CONFIG: BrandDetectionConfig = {
     caseSensitive: false,
     wholeWordOnly: true,
     includeVariations: true,
-    excludeNegativeContext: false,
+    excludeNegativeContext: true,
   },
   
   brandAliases: new Map(),
@@ -60,9 +60,9 @@ export const DEFAULT_BRAND_DETECTION_CONFIG: BrandDetectionConfig = {
   ],
   
   confidenceThresholds: {
-    high: 0.8,
-    medium: 0.5,
-    low: 0.3,
+    high: 0.85,
+    medium: 0.65,
+    low: 0.4,
   },
 };
 

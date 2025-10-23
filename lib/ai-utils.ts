@@ -515,35 +515,41 @@ When responding to prompts about tools, platforms, or services:
         }
 
         // Then analyze it with structured output
+
         const analysisPrompt = `Analyze this AI response about ${brandName} and its competitors:
 
 Response: "${text}"
 
 Your task:
-1. Look for ANY mention of ${brandName} anywhere in the response, including:
-   - Direct mentions (exact name)
-   - Variations (with or without spaces, punctuation)
-   - With suffixes (Inc, LLC, Corp, etc.)
-   - In possessive form (${brandName}'s)
-   - As part of compound words
-2. Look for ANY mention of these competitors: ${competitors.join(', ')}
-   - Apply the same detection rules as above
-3. For each mentioned company, determine if it has a specific ranking position
-4. Identify the sentiment towards each mentioned company
-5. Rate your confidence in this analysis (0-1)
+1. Look for EXPLICIT mentions of "${brandName}" - the company must be directly named or clearly referenced
+   - Accept: exact name matches, common abbreviations, official variations
+   - REJECT: partial words, unrelated compound words, coincidental substrings
+   
+2. For "${brandName}" to be "mentioned", it must appear in one of these contexts:
+   - Listed in a ranking or comparison
+   - Recommended or discussed by name
+   - Compared to other companies
+   - Referenced as an alternative or option
+   
+3. DO NOT count as mentions:
+   - Words that merely contain the brand name as a substring
+   - Unrelated terms that happen to match
+   - Generic industry terms
+   
+4. Look for these competitors with the same strict rules: ${competitors.join(', ')}
 
-IMPORTANT: 
-- A company is "mentioned" if it appears ANYWHERE in the response text, even without a specific ranking
-- Count ALL mentions, not just ranked ones
-- Be very thorough - check for variations like "${brandName}", "${brandName.replace(/\s+/g, '')}", "${brandName.toLowerCase()}"
-- Look in all contexts: listed, compared, recommended, discussed, referenced, etc.
+5. For each mentioned company, determine:
+   - Specific ranking position (if any)
+   - Sentiment towards the company
+   
+6. Rate your confidence (0-1):
+   - 1.0 = Exact, unambiguous mention
+   - 0.8 = Clear mention with minor variation
+   - 0.6 = Mention with some ambiguity
+   - < 0.6 = Uncertain or possible false positive
 
-Examples of mentions to catch:
-- "${brandName} is a great tool" (direct mention)
-- "compared to ${brandName}" (comparison context)  
-- "${brandName}'s features" (possessive)
-- "alternatives like ${brandName}" (listing context)
-- "${brandName.replace(/\s+/g, '')} offers" (no spaces variant)`;
+CRITICAL: Be conservative. When in doubt, mark as NOT mentioned. Only high-confidence detections should be counted.`;
+
 
         let object;
         try {

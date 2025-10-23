@@ -9,7 +9,7 @@ export interface CompetitorIdentificationParams {
 }
 
 export const COMPETITOR_IDENTIFICATION_PROMPT = (params: CompetitorIdentificationParams) => `
-Identify 6-9 real, established competitors of ${params.companyName} in the ${params.industry} industry.
+Identify 10-15 real, established competitors of ${params.companyName} in the ${params.industry} industry.
 
 Company: ${params.companyName}
 Industry: ${params.industry}
@@ -33,12 +33,12 @@ IMPORTANT:
 - Only include companies you are confident actually exist
 - Focus on TRUE competitors with similar offerings
 - Exclude retailers, marketplaces, or aggregators unless the company itself is one
-- Aim for 6-9 competitors total
+- Aim for 10-15 competitors total
 - Do NOT include general retailers or platforms that just sell/distribute products
 `;
 
 export const AI_COMPETITOR_DETECTION_PROMPT = (params: { companyName: string; companyContext: string }) => `
-Based on the following company information, identify 6-8 direct competitors in the same industry/market segment.
+Based on the following company information, identify 10-15 direct competitors in the same industry/market segment.
 
 ${params.companyContext}
 
