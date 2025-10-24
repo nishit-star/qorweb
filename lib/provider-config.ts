@@ -143,15 +143,15 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         supportsWebSearch: false,
       },
       {
-        id: 'claude-3-opus-20240229',
-        name: 'Claude 3 Opus',
+        id: 'claude-3-5-haiku-20241022',
+        name: 'Claude 3.5 Haiku',
         maxTokens: 200000,
         supportsFunctionCalling: true,
         supportsStructuredOutput: true,
         supportsWebSearch: false,
       },
     ],
-    defaultModel: 'claude-4-sonnet-20250514',
+    defaultModel: 'claude-3-5-haiku-20241022',
     capabilities: {
       webSearch: false,
       functionCalling: true,
@@ -206,7 +206,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         supportsWebSearch: true,
       },
     ],
-    defaultModel: 'gemini-2.0-flash',
+    defaultModel: 'gemini-2.5-pro',
     capabilities: {
       webSearch: true, // Native search grounding
       functionCalling: true,
@@ -262,7 +262,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         supportsWebSearch: true,
       },
     ],
-    defaultModel: 'sonar-pro',
+    defaultModel: 'sonar',
     capabilities: {
       webSearch: true, // All models have built-in web search
       functionCalling: false,

@@ -524,24 +524,24 @@ Your task:
 1. Look for EXPLICIT mentions of "${brandName}" - the company must be directly named or clearly referenced
    - Accept: exact name matches, common abbreviations, official variations
    - REJECT: partial words, unrelated compound words, coincidental substrings
-   
+
 2. For "${brandName}" to be "mentioned", it must appear in one of these contexts:
    - Listed in a ranking or comparison
    - Recommended or discussed by name
    - Compared to other companies
    - Referenced as an alternative or option
-   
+
 3. DO NOT count as mentions:
    - Words that merely contain the brand name as a substring
    - Unrelated terms that happen to match
    - Generic industry terms
-   
+
 4. Look for these competitors with the same strict rules: ${competitors.join(', ')}
 
 5. For each mentioned company, determine:
    - Specific ranking position (if any)
    - Sentiment towards the company
-   
+
 6. Rate your confidence (0-1):
    - 1.0 = Exact, unambiguous mention
    - 0.8 = Clear mention with minor variation
@@ -1035,7 +1035,7 @@ export async function analyzeCompetitorsByProvider(
         competitorMap.forEach((data, name) => {
             const avgPosition = data.positions.length > 0
                 ? data.positions.reduce((a, b) => a + b, 0) / data.positions.length
-                : 99;
+                : null;
 
             const visibilityScore = totalResponses > 0
                 ? (data.mentions / totalResponses) * 100
