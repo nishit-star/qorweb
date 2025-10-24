@@ -121,6 +121,10 @@
   }
 }
 
+html, body, #__next {
+  height: 100%;
+}
+
 /* Firecrawl button styles */
 .btn-firecrawl-default {
   background-color: #155DFC;

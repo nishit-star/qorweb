@@ -541,12 +541,12 @@ export function BrandMonitor({
   const brandData = analysis?.competitors?.find(c => c.isOwn);
   
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col min-h-screen h-screen">
 
       {/* URL Input Section */}
       {showInput && (
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex-1 flex items-center justify-center min-h-0">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 h-full min-h-0">
             <UrlInputSection
             url={url}
             urlValid={urlValid}
@@ -561,9 +561,9 @@ export function BrandMonitor({
 
       {/* Company Card Section with Competitors */}
       {!showInput && company && !showPromptsList && !analyzing && !analysis && (
-        <div className="flex items-center justify-center animate-panel-in">
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-            <div className="w-full space-y-6">
+        <div className="flex-1 flex items-center justify-center animate-panel-in min-h-0 h-full">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 h-full min-h-0">
+            <div className="w-full space-y-6 h-full min-h-0">
             <div className={`transition-all duration-500 ${showCompanyCard ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
               <CompanyCard 
                 company={company}
@@ -586,7 +586,8 @@ export function BrandMonitor({
 
       {/* Prompts List Section */}
       {showPromptsList && company && !analysis && (
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex-1 min-h-0 h-full">
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 h-full min-h-0">
             <AnalysisProgressSection
                 company={company}
                 analyzing={analyzing}
@@ -614,16 +615,15 @@ export function BrandMonitor({
                 }}
                 onStartAnalysis={handleAnalyze}
             />
-
-
+            </div>
         </div>
       )}
 
       {/* Analysis Results */}
       {analysis && brandData && (
-        <div className="flex-1 flex justify-center animate-panel-in pt-8">
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-            <div className="flex gap-6 relative">
+        <div className="flex-1 flex justify-center animate-panel-in pt-8 min-h-0 h-full">
+          <div className="w-[95%] max-w-none mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-0">
+            <div className="flex gap-6 relative h-full min-h-0">
             {/* Sidebar Navigation */}
             <div className="space-y-4">
               <ResultsNavigation
@@ -650,8 +650,8 @@ export function BrandMonitor({
             </div>
             
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col">
-              <div className="w-full flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col h-full min-h-0">
+              <div className="w-full flex-1 flex flex-col h-full min-h-0">
                 {/* Tab Content */}
                 {activeResultsTab === 'visibility' && (
                   <VisibilityScoreTab
@@ -662,40 +662,45 @@ export function BrandMonitor({
                 )}
 
                 {activeResultsTab === 'matrix' && (
-                  <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 h-full flex flex-col">
-                    <CardHeader className="border-b">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <CardTitle className="text-xl font-semibold">Comparison Matrix</CardTitle>
-                          <CardDescription className="text-sm text-gray-600 mt-1">
-                            Compare visibility scores across different AI providers
-                          </CardDescription>
+                  <div className="w-full flex justify-center">
+                    <Card className="bg-white text-card-foreground border border-gray-200 rounded-xl shadow-sm w-[95%] mx-auto flex flex-col h-[calc(100vh-120px)]">
+                      <CardHeader className="border-b p-6">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <CardTitle className="text-xl font-semibold">Comparison Matrix</CardTitle>
+                            <CardDescription className="text-sm text-gray-600 mt-1">
+                              Compare visibility scores across different AI providers
+                            </CardDescription>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-[#155DFC]">{brandData.visibilityScore}%</p>
+                            <p className="text-xs text-gray-500 mt-1">Average Score</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-[#155DFC]">{brandData.visibilityScore}%</p>
-                          <p className="text-xs text-gray-500 mt-1">Average Score</p>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-6 flex-1 overflow-auto">
-                      {analysis.providerComparison ? (
-                        <ProviderComparisonMatrix 
-                          data={analysis.providerComparison} 
-                          brandName={company?.name || ''} 
-                          competitors={identifiedCompetitors}
-                        />
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          <p>No comparison data available</p>
-                          <p className="text-sm mt-2">Please ensure AI providers are configured and the analysis has completed.</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </CardHeader>
+
+                      <CardContent className="pt-6 overflow-auto">
+                        {analysis.providerComparison ? (
+                          <ProviderComparisonMatrix
+                            data={analysis.providerComparison}
+                            brandName={company?.name || ''}
+                            competitors={identifiedCompetitors}
+                          />
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <p>No comparison data available</p>
+                            <p className="text-sm mt-2">
+                              Please ensure AI providers are configured and the analysis has completed.
+                            </p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
                 )}
 
                 {activeResultsTab === 'rankings' && analysis.providerRankings && (
-                  <div id="provider-rankings" className="h-full">
+                  <div id="provider-rankings">
                     <ProviderRankingsTabs 
                       providerRankings={analysis.providerRankings} 
                       brandName={company?.name || 'Your Brand'}
@@ -708,7 +713,7 @@ export function BrandMonitor({
                 )}
 
                 {activeResultsTab === 'prompts' && analysis.prompts && (
-                  <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 h-full flex flex-col">
+                  <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 flex flex-col h-full">
                     <CardHeader className="border-b">
                       <div className="flex justify-between items-center">
                         <div>
@@ -723,7 +728,7 @@ export function BrandMonitor({
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-6 flex-1 overflow-auto">
+                    <CardContent className="pt-6 overflow-auto">
                       <PromptsResponsesTab
                         prompts={analysis.prompts}
                         responses={analysis.responses}

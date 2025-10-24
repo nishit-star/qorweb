@@ -85,7 +85,7 @@ function BrandMonitorContent({ session, onOpenAeoForUrl, onOpenFilesForUrl, pref
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       {/* Hero Header */}
       {/* <div className="relative overflow-hidden bg-white border-b">
         <div className="px-4 sm:px-6 lg:px-8 py-12">
@@ -108,7 +108,7 @@ function BrandMonitorContent({ session, onOpenAeoForUrl, onOpenFilesForUrl, pref
       </div> */}
 
       {/* --- Main area: sidebar + content (existing) --- */}
-      <div className="flex h-[calc(100vh-12rem)] relative">
+      <div className="flex relative">
         {/* Sidebar Toggle Button - Always visible */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -135,14 +135,14 @@ function BrandMonitorContent({ session, onOpenAeoForUrl, onOpenFilesForUrl, pref
             </Button>
           </div>
 
-          <div className="overflow-y-auto flex-1">
+          <div className="overflow-y-auto flex-1 max-h-[calc(100vh-15rem)]">
             {analysesLoading ? (
               <div className="p-4 text-center text-gray-500">Loading analyses...</div>
             ) : analyses?.length === 0 ? (
               <div className="p-4 text-center text-gray-500">No analyses yet</div>
             ) : (
               <div className="space-y-1 p-2">
-                {analyses?.map((analysis) => (
+                {analyses?.slice(0, 9).map((analysis) => (
                   <div
                     key={analysis.id}
                     className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 ${
@@ -486,7 +486,7 @@ export default function BrandMonitorPage() {
   };
 
   return (
-    <div className="bg-gray-50 flex flex-col flex-1">
+    <div className="bg-gray-50">
       {/* Keep the hero header at top so it's shared across tabs */}
       <div className="relative overflow-hidden bg-white border-b">
         
@@ -525,7 +525,7 @@ export default function BrandMonitorPage() {
       </div>
 
       {/* Tab content area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 flex flex-col">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "brand" && <BrandMonitorContent session={session} onOpenAeoForUrl={handleOpenAeoForUrl} onOpenFilesForUrl={handleOpenFilesForUrl} prefillBrand={prefillBrand} />}
         {activeTab === "aeo" && <AeoReportTab prefill={prefillAeo} onOpenBrandForUrl={(url, customerName) => { setPrefillBrand({ url, customerName: (customerName && customerName.trim()) ? customerName : "autouser" }); setActiveTab("brand"); }} onOpenFilesForUrl={handleOpenFilesForUrl} />}
         {activeTab === "files" && (
