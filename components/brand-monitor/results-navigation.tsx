@@ -17,7 +17,7 @@ export function ResultsNavigation({
   };
   
   return (
-    <nav className="w-50 flex-shrink-0 animate-fade-in flex flex-col h-[calc(100vh-8rem)] ml-[-2rem] sticky top-8" style={{ animationDelay: '0.3s' }}>
+    <nav className="w-60 flex-shrink-0 animate-fade-in flex flex-col h-[calc(100vh-8rem)] ml-[-2rem] sticky top-8" style={{ animationDelay: '0.3s' }}>
       
       <div className="w-full flex flex-col justify-between flex-1">
         
@@ -63,8 +63,22 @@ export function ResultsNavigation({
         >
           Visibility Score
         </button>
-        
+         <div className="mt-4 text-gray-700 text-xs space-y-1">
+                <p className="text-sm"><strong>Glossary</strong></p>
+                <br/>
+                <p><strong>Annotation:</strong></p>
+                <p><strong>Visibility:</strong> How often your brand appears in search results for the tracked keywords.</p>
+                <p><strong>Share of Voice:</strong> Your brand&apos;s percentage of mentions compared to competitors across the analyzed content.</p>
+                <p><strong>Sentiment:</strong> The overall emotional tone (positive, negative, neutral) of the content where your brand is mentioned.</p>
+                <br />
+                <p><strong>Formulas:</strong></p>
+                <p><strong>Visibility </strong>= (Number of responses citing your domain) ÷ (Total responses)</p>
+                <p><strong>Share of Voice </strong>= (Brand's total mentions / Total mentions across all competitors) × 100</p>
+                <p><strong>Sentiment Score </strong>= (Positive sentiment mentions / Total mentions) × 100</p>
+                <p><strong>AveragePosition  </strong>= Sum of all positions where brand was mentioned / Number of mentions</p>
         </div>
+        </div>
+        <br></br>
         
         {/* Analyze another website button - at the bottom */}
         <div className="pt-4 pb-8 border-t border-gray-200">
@@ -78,6 +92,8 @@ export function ResultsNavigation({
             Analyze another website
           </button>
         </div>
+
+       
       </div>
     </nav>
   );

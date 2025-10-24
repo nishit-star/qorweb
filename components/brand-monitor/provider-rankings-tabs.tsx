@@ -301,19 +301,7 @@ export function ProviderRankingsTabs({
           </div>
         </div>
 
-        <div className="mt-4 text-red-500 text-sm space-y-1">
-                <p><strong>Visibility:</strong> How often your brand appears in search results for the tracked keywords.</p>
-                <p><strong>Share of Voice:</strong> Your brand&apos;s percentage of mentions compared to competitors across the analyzed content.</p>
-                <p><strong>Sentiment:</strong> The overall emotional tone (positive, negative, neutral) of the content where your brand is mentioned.</p>
-                <br />
-                <p><strong>Formulas:</strong></p>
-                <p><strong>Visibility </strong>= (Number of responses citing your domain) ÷ (Total responses)</p>
-                <p><strong>Share of Voice </strong>= (Brand's total mentions / Total mentions across all competitors) × 100</p>
-                <p><strong>Sentiment Score </strong>= (Positive sentiment mentions / Total mentions) × 100</p>
-                <p><strong>AveragePosition  </strong>= Sum of all positions where brand was mentioned / Number of mentions</p>
-
-
-              </div>
+        
 
       </CardContent>
     </Card>

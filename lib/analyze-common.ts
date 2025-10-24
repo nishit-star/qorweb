@@ -314,6 +314,12 @@ export async function performAnalysis({
     
     // Wait for all promises in this batch to complete
     await Promise.all(batchPromises);
+
+    // Add a 30-second cool-off period after each batch
+    if (batchEnd < analysisPrompts.length) { // Don't wait after the last batch
+        console.log('Cooldown period: waiting 30 seconds before next batch...');
+        await new Promise(resolve => setTimeout(resolve, 30000));
+    }
   }
 
   // Stage 4: Calculate scores
