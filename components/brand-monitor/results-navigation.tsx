@@ -17,7 +17,7 @@ export function ResultsNavigation({
   };
   
   return (
-    <nav className="w-60 flex-shrink-0 animate-fade-in flex flex-col h-[calc(100vh-8rem)] ml-[-2rem] sticky top-8" style={{ animationDelay: '0.3s' }}>
+    <nav className="w-47 flex-shrink-0 animate-fade-in flex flex-col h-[calc(100vh-8rem)] ml-[-2rem] sticky top-8" style={{ animationDelay: '0.3s' }}>
       
       <div className="w-full flex flex-col justify-between flex-1">
         
