@@ -34,7 +34,7 @@ export default function RegisterPage() {
         
         // Force a hard navigation to ensure cookies are sent
         if (typeof window !== 'undefined') {
-          window.location.href = '/brand-monitor';
+          window.location.href = '/';
         }
       } else {
         throw response.error;

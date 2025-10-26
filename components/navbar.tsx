@@ -47,7 +47,17 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link href="/brand-monitor" className="flex items-center">
+            <button
+              type="button"
+              onClick={() => {
+                // Navigate to Brand Monitor and reset its state
+                // Using a distinct path with hash so the page mounts the BrandMonitor and can reset internally
+                router.push('/#brand');
+                // Force a refresh to ensure any lingering state clears
+                router.refresh();
+              }}
+              className="flex items-center focus:outline-none"
+            >
               <Image
                 src="/firecrawl-logo-with-fire.png"
                 alt="AutoReach"
@@ -55,18 +65,13 @@ export function Navbar() {
                 height={25}
                 priority
               />
-            </Link>
+            </button>
           </div>
 
           <div className="flex items-center space-x-4">
             {session && (
               <>
-                <Link
-                  href="/brand-monitor"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-                >
-                  Brand Monitor
-                </Link>
+                
 
 
               </>
