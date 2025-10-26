@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title: "AutoReach",
   description: "Next.js AutoReach with Better Auth",
   icons: {
-    icon: "/favicon.png", 
+    icon: "/favicon.ico", 
   },
 };
 
