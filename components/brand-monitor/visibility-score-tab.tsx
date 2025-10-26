@@ -111,7 +111,7 @@ export function VisibilityScoreTab({
                   <p className="text-sm text-gray-500 mt-1">Rank</p>
                   {difference !== 0 && (
                     <p className={`text-xs mt-2 font-medium ${difference > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {difference > 0 ? '+' : ''}{Math.abs(difference).toFixed(1)}% vs #1
+                      {difference > 0 ? '+' : ''}{Math.abs(difference).toFixed(1)}% vs #2
                     </p>
                   )}
                 </div>
