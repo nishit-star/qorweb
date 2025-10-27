@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/lib/auth-client";
+import { FileText, Settings, Code, HelpCircle } from "lucide-react";
 
 export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?: string } | null }) {
   const { data: session } = useSession();
@@ -18,13 +19,7 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
   const [competitors, setCompetitors] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [waiting, setWaiting] = useState(false);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [elapsed, setElapsed] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const timerRef = useRef<number | null>(null);
-  const stopPollingRef = useRef(false);
-  const [jobId, setJobId] = useState<string | null>(null);
 
   // Files list state
   const [files, setFiles] = useState<any[]>([]);
@@ -85,54 +80,16 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
     run();
   }, [url]);
 
-  // Restore state from localStorage when navigating back
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('gf_state');
-      if (saved) {
-        const st = JSON.parse(saved);
-        setUrl(st.url || '');
-        setPrompt(st.prompt || '');
-        setCompetitors(st.competitors || []);
-        setBrand(st.brand || '');
-        setIndustry(st.industry || '');
-        setWaiting(!!st.waiting);
-        setStartedAt(st.startedAt || null);
-        setJobId(st.jobId || null);
-      }
-    } catch {}
-  }, []);
 
-  // If user returns while waiting, resume polling
-  useEffect(() => {
-    if (waiting && jobId && startedAt && !stopPollingRef.current) {
-      startSSE(jobId);
-    }
-  }, [waiting, jobId, startedAt]);
-
-  // Persist state (email comes from session, don't persist it from input)
-  useEffect(() => {
-    const st = { email: userEmail, url, prompt, competitors, brand, industry, waiting, startedAt, jobId };
-    try { localStorage.setItem('gf_state', JSON.stringify(st)); } catch {}
-  }, [userEmail, url, prompt, competitors, waiting, startedAt, jobId]);
-
-  // Timer handling
-  useEffect(() => {
-    if (waiting && startedAt) {
-      const update = () => setElapsed(Math.floor((Date.now() - startedAt) / 1000));
-      update();
-      timerRef.current = window.setInterval(update, 1000);
-      return () => { if (timerRef.current) window.clearInterval(timerRef.current); };
-    }
-  }, [waiting, startedAt]);
-
-  const elapsedFmt = useMemo(() => {
-    const s = elapsed % 60;
-    const m = Math.floor(elapsed / 60) % 60;
-    const h = Math.floor(elapsed / 3600);
-    const pad = (n:number) => n.toString().padStart(2,'0');
-    return `${pad(h)}:${pad(m)}:${pad(s)}`;
-  }, [elapsed]);
+  // Helper function to get icon for each file type
+  function getFileIcon(filename: string) {
+    const name = filename.toLowerCase();
+    if (name.includes('llm')) return <FileText className="w-5 h-5 text-blue-600" />;
+    if (name.includes('robots')) return <Settings className="w-5 h-5 text-gray-600" />;
+    if (name.includes('schema')) return <Code className="w-5 h-5 text-purple-600" />;
+    if (name.includes('faq')) return <HelpCircle className="w-5 h-5 text-green-600" />;
+    return <FileText className="w-5 h-5 text-gray-600" />;
+  }
 
   function addCompetitor() {
     const trimmed = competitorInput.trim();
@@ -145,66 +102,44 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
+
     const finalEmail = userEmail || email; // prefer session email
-    if (!finalEmail || !url || !brand.trim() || !industry.trim()) { setError('Email, URL, Brand name and Industry are required'); return; }
+    if (!finalEmail || !url || !brand.trim() || !industry.trim()) {
+      setError('Email, URL, Brand name and Industry are required');
+      return;
+    }
 
     try {
       setSending(true);
       const body = { url, competitors, prompts: prompt, brand: brand.trim(), category: industry.trim() };
-      const res = await fetch('/api/files/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res = await fetch('/api/files/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
       const data = await res.json();
-      if (!res.ok || !data.jobId) throw new Error(data?.error || 'Failed to create job');
 
-      const newJobId = data.jobId as string;
-      setJobId(newJobId);
+      if (!res.ok || !data.jobId) {
+        throw new Error(data?.error || 'Failed to create job');
+      }
+
+      // Show success message
+      setSuccessMessage('File generation request submitted successfully! Files will be delivered to your inbox.');
+
+      // Reset form
+      setUrl('');
+      setPrompt('');
+      setBrand('');
+      setIndustry('');
+      setCompetitors([]);
+      setCompetitorInput('');
+
       setSending(false);
-      setWaiting(true);
-      setStartedAt(Date.now());
-      setSuccessMessage(null);
-      stopPollingRef.current = false;
-      startSSE(newJobId);
-    } catch (err:any) {
+    } catch (err: any) {
       setError(err.message || 'Unexpected error');
       setSending(false);
     }
-  }
-
-  function startSSE(jobId: string) {
-    const es = new EventSource(`/api/files/jobs/${encodeURIComponent(jobId)}/events`);
-   es.onmessage = async (evt) => {
-  try {
-    const data = JSON.parse(evt.data);
-    if (data?.status === 'completed') {
-      setWaiting(false);
-      if (timerRef.current) window.clearInterval(timerRef.current);
-      setSuccessMessage('Files have been delivered to your inbox.');
-      
-      // ✅ allowed now
-      try {
-        const res = await fetch(`/api/files/list?url=${encodeURIComponent(url)}`);
-        const d = await res.json();
-        if (res.ok && Array.isArray(d.files)) {
-          setFiles(d.files);
-          try { localStorage.setItem(cacheKey(url), JSON.stringify(d.files)); } catch {}
-          setShowForm(false);
-        }
-      } catch {}
-
-      try { localStorage.removeItem('gf_state'); } catch {}
-      es.close();
-    } else if (data?.status === 'failed') {
-      setWaiting(false);
-      if (timerRef.current) window.clearInterval(timerRef.current);
-      setError(data?.error || 'Job failed');
-      es.close();
-    }
-  } catch {}
-};
-
-    es.onerror = () => {
-      // auto-close on error; UI will continue showing waiting state
-      es.close();
-    };
   }
 
   return (
@@ -227,7 +162,7 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
         </div>
       )}
 
-      {!waiting && files.length > 0 && (
+      {files.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold">Previously generated files</h3>
@@ -253,15 +188,20 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
           ) : (
             <ul className="divide-y border rounded">
               {files.map((f:any, idx:number) => (
-                <li key={f.id || f._id || idx} className="flex items-center justify-between px-3 py-2">
-                  <div>
-                    <div className="font-medium">{f.name || f.filename || f.title || `File ${idx+1}`}</div>
-                    <div className="text-xs text-gray-500">
-                      {f.size ? `${Math.round((f.size/1024) * 10)/10} KB` : ''} {f.createdAt ? `• ${new Date(f.createdAt).toLocaleString()}` : ''}
+                <li key={f.id || f._id || idx} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex-shrink-0">
+                      {getFileIcon(f.name || f.filename || f.title || '')}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{f.name || f.filename || f.title || `File ${idx+1}`}</div>
+                      <div className="text-xs text-gray-500">
+                        {f.size ? `${Math.round((f.size/1024) * 10)/10} KB` : ''} {f.createdAt ? `• ${new Date(f.createdAt).toLocaleString()}` : ''}
+                      </div>
                     </div>
                   </div>
                   {f.url || f.downloadUrl ? (
-                    <a href={(f.url || f.downloadUrl) as string} target="_blank" rel="noopener" className="text-blue-600 hover:underline">Download</a>
+                    <a href={(f.url || f.downloadUrl) as string} target="_blank" rel="noopener" className="text-blue-600 hover:text-blue-800 hover:underline font-medium flex-shrink-0">Download</a>
                   ) : null}
                 </li>
               ))}
@@ -270,7 +210,7 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
         </div>
       )}
 
-      {!waiting && (showForm || files.length === 0) ? (
+      {(showForm || files.length === 0) && (
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -324,13 +264,6 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
             <Button type="submit" disabled={sending} className="btn-firecrawl-default h-9 px-4">{sending ? 'Sending…' : 'Send Request'}</Button>
           </div>
         </form>
-      ) : (
-        <div className="flex items-center justify-between border rounded px-4 py-3 bg-gray-50">
-          <div className="text-sm text-gray-900 font-semibold">
-            Request created. Generating files…
-          </div>
-          <div className="text-sm text-gray-900 font-bold">Elapsed <span className="font-mono">{elapsedFmt}</span></div>
-        </div>
       )}
     </div>
   );
