@@ -78,7 +78,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         maxTokens: 128000,
         supportsFunctionCalling: true,
         supportsStructuredOutput: true,
-        supportsWebSearch: false,
+        supportsWebSearch: true,
       },
       {
         id: 'gpt-4o-mini',
@@ -97,7 +97,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         supportsWebSearch: false,
       },
     ],
-    defaultModel: 'gpt-4o',
+    defaultModel: 'gpt-4o-mini-search-preview',
     capabilities: {
       webSearch: true, // Via responses API with specific models
       functionCalling: true,
@@ -108,12 +108,11 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     getModel: (modelId?: string, options?: any) => {
       if (!process.env.OPENAI_API_KEY) return null;
       const model = modelId || PROVIDER_CONFIGS.openai.defaultModel;
-      
+
       // Use responses API for web search if requested
-      if (options?.useWebSearch && model === 'gpt-4o-mini') {
-        return openai.responses(model);
+      if (options?.useWebSearch) {
+          return openai.responses(model);
       }
-      
       return openai(model);
     },
     isConfigured: () => !!process.env.OPENAI_API_KEY,
