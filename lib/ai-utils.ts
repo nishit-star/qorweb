@@ -1037,10 +1037,6 @@ export async function analyzeCompetitorsByProvider(
                 ? data.positions.reduce((a, b) => a + b, 0) / data.positions.length
                 : null;
 
-            const visibilityScore = totalResponses > 0
-                ? (data.mentions / totalResponses) * 100
-                : 0;
-
             competitors.push({
                 name,
                 mentions: data.mentions,
@@ -1048,17 +1044,20 @@ export async function analyzeCompetitorsByProvider(
                 sentiment: determineSentiment(data.sentiments),
                 sentimentScore: calculateSentimentScore(data.sentiments),
                 shareOfVoice: 0, // Will calculate after
-                visibilityScore: Math.round(visibilityScore * 10) / 10,
+                visibilityScore: 0, // Will calculate after
                 isOwn: name === company.name,
             });
         });
 
-        // Calculate share of voice for this provider
+        // Calculate share of voice and visibility score for this provider
+        // Both should represent the same thing - percentage of total mentions that add up to 100%
         const totalMentions = competitors.reduce((sum, c) => sum + c.mentions, 0);
         competitors.forEach(c => {
-            c.shareOfVoice = totalMentions > 0
+            const score = totalMentions > 0
                 ? Math.round((c.mentions / totalMentions) * 1000) / 10
                 : 0;
+            c.shareOfVoice = score;
+            c.visibilityScore = score;
         });
 
         // Sort by visibility score

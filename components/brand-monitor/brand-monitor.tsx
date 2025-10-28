@@ -559,13 +559,21 @@ export function BrandMonitor({
             const bPos = comp.averagePosition || 0;
             merged[key].averagePosition = ((aPos * aM) + (bPos * bM)) / (aM + bM);
           }
-          // take max visibility or recompute later; for now choose higher
-          merged[key].visibilityScore = Math.max(merged[key].visibilityScore || 0, comp.visibilityScore || 0);
           // keep sentiment score as max for visibility context
           merged[key].sentimentScore = Math.max(merged[key].sentimentScore || 0, comp.sentimentScore || 0);
         }
       }
-      newAnalysis.competitors = Object.values(merged);
+
+      // Recalculate visibility scores as share of voice (normalized to 100%)
+      const mergedArray = Object.values(merged);
+      const totalMentions = mergedArray.reduce((sum: number, comp: any) => sum + (comp.mentions || 0), 0);
+      if (totalMentions > 0) {
+        mergedArray.forEach((comp: any) => {
+          comp.visibilityScore = Math.round((comp.mentions / totalMentions) * 1000) / 10;
+        });
+      }
+
+      newAnalysis.competitors = mergedArray;
     }
 
     if (changed) {
