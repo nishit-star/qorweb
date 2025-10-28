@@ -243,7 +243,7 @@ export function ProviderComparisonMatrix({ data, brandName, competitors }: Provi
                       }`}
                       style={getBackgroundStyle(score)}
                     >
-                      <span className="text-blue-900 font-medium text-xs">
+                      <span className="text-black font-bold text-xs">
                         {score}%
                       </span>
                     </td>

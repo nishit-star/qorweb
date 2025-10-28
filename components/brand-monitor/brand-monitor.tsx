@@ -493,6 +493,86 @@ export function BrandMonitor({
     hasSavedRef.current = false;
     setIsLoadingExistingAnalysis(false);
   }, []);
+
+  // Reconcile backend analysis competitor keys with user-added competitors (name-only allowed)
+  useEffect(() => {
+    if (!state.analysis) return;
+
+    const analysis = state.analysis as any;
+    const customs = (state.identifiedCompetitors || []).map(c => ({
+      name: (c.name || '').trim(),
+      normName: (c.name || '').toLowerCase().trim(),
+      domain: c.url ? c.url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '').toLowerCase() : undefined,
+    }));
+
+    const matchToCustom = (label: string): string | null => {
+      const norm = (label || '').toLowerCase().trim();
+      // try exact norm name match first
+      const byName = customs.find(c => c.normName && c.normName === norm);
+      if (byName) return byName.name;
+      // also try domain containment if label looks like a domain
+      const labelDomain = norm.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+      const byDomain = customs.find(c => c.domain && (c.domain === labelDomain || labelDomain.includes(c.domain) || c.domain.includes(labelDomain)));
+      return byDomain ? byDomain.name : null;
+    };
+
+    let changed = false;
+    const newAnalysis = { ...analysis };
+
+    // 1) Re-label providerComparison rows to custom names when match found
+    if (Array.isArray(newAnalysis.providerComparison)) {
+      newAnalysis.providerComparison = newAnalysis.providerComparison.map((row: any) => {
+        const matched = matchToCustom(row.competitor);
+        if (matched && matched !== row.competitor) {
+          changed = true;
+          return { ...row, competitor: matched };
+        }
+        return row;
+      });
+    }
+
+    // 2) Re-label competitors array entries
+    if (Array.isArray(newAnalysis.competitors)) {
+      newAnalysis.competitors = newAnalysis.competitors.map((comp: any) => {
+        const matched = matchToCustom(comp.name || comp.competitor || '');
+        if (matched && matched !== (comp.name || comp.competitor)) {
+          changed = true;
+          return { ...comp, name: matched, competitor: matched };
+        }
+        return comp;
+      });
+    }
+
+    // 3) Merge duplicates that may result from relabeling
+    if (Array.isArray(newAnalysis.competitors)) {
+      const merged: any = {};
+      for (const comp of newAnalysis.competitors) {
+        const key = (comp.name || comp.competitor || '').toLowerCase();
+        if (!merged[key]) merged[key] = { ...comp };
+        else {
+          // sum mentions, average positions weighted by mentions where possible
+          merged[key].mentions = (merged[key].mentions || 0) + (comp.mentions || 0);
+          const aM = merged[key].mentions || 0;
+          const bM = comp.mentions || 0;
+          if (aM + bM > 0) {
+            const aPos = merged[key].averagePosition || 0;
+            const bPos = comp.averagePosition || 0;
+            merged[key].averagePosition = ((aPos * aM) + (bPos * bM)) / (aM + bM);
+          }
+          // take max visibility or recompute later; for now choose higher
+          merged[key].visibilityScore = Math.max(merged[key].visibilityScore || 0, comp.visibilityScore || 0);
+          // keep sentiment score as max for visibility context
+          merged[key].sentimentScore = Math.max(merged[key].sentimentScore || 0, comp.sentimentScore || 0);
+        }
+      }
+      newAnalysis.competitors = Object.values(merged);
+    }
+
+    if (changed) {
+      dispatch({ type: 'SET_ANALYSIS', payload: newAnalysis });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.analysis]);
   
   // Debug function to manually save analysis
   const handleManualSave = useCallback(() => {
