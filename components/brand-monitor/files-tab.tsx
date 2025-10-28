@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/lib/auth-client";
+import { FileText, Settings, Code, HelpCircle } from "lucide-react";
 
 export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?: string } | null }) {
   const { data: session } = useSession();
@@ -18,121 +19,27 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
   const [competitors, setCompetitors] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [waiting, setWaiting] = useState(false);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [elapsed, setElapsed] = useState(0);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const timerRef = useRef<number | null>(null);
-  const stopPollingRef = useRef(false);
-  const [jobId, setJobId] = useState<string | null>(null);
-
-  // Files list state
-  const [files, setFiles] = useState<any[]>([]);
-  const [filesLoading, setFilesLoading] = useState(false);
+  const [showFilesInfo, setShowFilesInfo] = useState(false);
   const [showForm, setShowForm] = useState(true);
-
-  const normalizeUrl = (u: string) => {
-    try {
-      const obj = new URL(u);
-      obj.hostname = obj.hostname.toLowerCase();
-      let s = obj.toString();
-      if (s.endsWith('/')) s = s.replace(/\/+$/, '');
-      return s;
-    } catch {
-      return u.trim().replace(/\/+$/, '');
-    }
-  };
-  const cacheKey = (u: string) => `gf_files_${normalizeUrl(u)}`;
 
   // Initialize from session / prefill
   useEffect(() => {
     setEmail(userEmail || "");
   }, [userEmail]);
-  useEffect(() => {
-    if (prefill?.url) setUrl(prefill.url);
-  }, [prefill?.url]);
 
-  // Fetch files for URL (with cache)
   useEffect(() => {
-    const run = async () => {
-      if (!url) return;
-      setFilesLoading(true);
-      // show cached immediately
-      try {
-        const cached = localStorage.getItem(cacheKey(url));
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed)) {
-            setFiles(parsed);
-            setShowForm(false);
-          }
-        }
-      } catch {}
-      // fetch fresh
-      try {
-        const res = await fetch(`/api/files/list?url=${encodeURIComponent(url)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.files)) {
-            setFiles(data.files);
-            if (data.files.length > 0) setShowForm(false);
-            try { localStorage.setItem(cacheKey(url), JSON.stringify(data.files)); } catch {}
-          }
-        }
-      } catch {}
-      setFilesLoading(false);
-    };
-    run();
-  }, [url]);
-
-  // Restore state from localStorage when navigating back
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('gf_state');
-      if (saved) {
-        const st = JSON.parse(saved);
-        setUrl(st.url || '');
-        setPrompt(st.prompt || '');
-        setCompetitors(st.competitors || []);
-        setBrand(st.brand || '');
-        setIndustry(st.industry || '');
-        setWaiting(!!st.waiting);
-        setStartedAt(st.startedAt || null);
-        setJobId(st.jobId || null);
-      }
-    } catch {}
-  }, []);
-
-  // If user returns while waiting, resume polling
-  useEffect(() => {
-    if (waiting && jobId && startedAt && !stopPollingRef.current) {
-      startSSE(jobId);
+    if (prefill?.url && showForm) {
+      setUrl(prefill.url);
     }
-  }, [waiting, jobId, startedAt]);
-
-  // Persist state (email comes from session, don't persist it from input)
-  useEffect(() => {
-    const st = { email: userEmail, url, prompt, competitors, brand, industry, waiting, startedAt, jobId };
-    try { localStorage.setItem('gf_state', JSON.stringify(st)); } catch {}
-  }, [userEmail, url, prompt, competitors, waiting, startedAt, jobId]);
-
-  // Timer handling
-  useEffect(() => {
-    if (waiting && startedAt) {
-      const update = () => setElapsed(Math.floor((Date.now() - startedAt) / 1000));
-      update();
-      timerRef.current = window.setInterval(update, 1000);
-      return () => { if (timerRef.current) window.clearInterval(timerRef.current); };
+    if (prefill?.customerName && showForm) {
+      setBrand(prefill.customerName);
     }
-  }, [waiting, startedAt]);
+  }, [prefill?.url, prefill?.customerName]);
 
-  const elapsedFmt = useMemo(() => {
-    const s = elapsed % 60;
-    const m = Math.floor(elapsed / 60) % 60;
-    const h = Math.floor(elapsed / 3600);
-    const pad = (n:number) => n.toString().padStart(2,'0');
-    return `${pad(h)}:${pad(m)}:${pad(s)}`;
-  }, [elapsed]);
+  // Note: Removed auto-fetch on URL change to prevent form from vanishing
+  // Files are only fetched after submission or explicit refresh
+
 
   function addCompetitor() {
     const trimmed = competitorInput.trim();
@@ -145,66 +52,52 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
+
     const finalEmail = userEmail || email; // prefer session email
-    if (!finalEmail || !url || !brand.trim() || !industry.trim()) { setError('Email, URL, Brand name and Industry are required'); return; }
+    if (!finalEmail || !url || !brand.trim() || !industry.trim()) {
+      setError('Email, URL, Brand name and Industry are required');
+      return;
+    }
 
     try {
       setSending(true);
       const body = { url, competitors, prompts: prompt, brand: brand.trim(), category: industry.trim() };
-      const res = await fetch('/api/files/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res = await fetch('/api/files/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
       const data = await res.json();
-      if (!res.ok || !data.jobId) throw new Error(data?.error || 'Failed to create job');
 
-      const newJobId = data.jobId as string;
-      setJobId(newJobId);
+      if (!res.ok || !data.jobId) {
+        throw new Error(data?.error || 'Failed to create job');
+      }
+
+      // Show success message and files info
+      setSuccessMessage('Files have been sent to your email and will be received in 30 minutes.');
+      setShowFilesInfo(true);
+      setShowForm(false);
+
       setSending(false);
-      setWaiting(true);
-      setStartedAt(Date.now());
-      setSuccessMessage(null);
-      stopPollingRef.current = false;
-      startSSE(newJobId);
-    } catch (err:any) {
+    } catch (err: any) {
       setError(err.message || 'Unexpected error');
       setSending(false);
     }
   }
 
-  function startSSE(jobId: string) {
-    const es = new EventSource(`/api/files/jobs/${encodeURIComponent(jobId)}/events`);
-   es.onmessage = async (evt) => {
-  try {
-    const data = JSON.parse(evt.data);
-    if (data?.status === 'completed') {
-      setWaiting(false);
-      if (timerRef.current) window.clearInterval(timerRef.current);
-      setSuccessMessage('Files have been delivered to your inbox.');
-      
-      // ✅ allowed now
-      try {
-        const res = await fetch(`/api/files/list?url=${encodeURIComponent(url)}`);
-        const d = await res.json();
-        if (res.ok && Array.isArray(d.files)) {
-          setFiles(d.files);
-          try { localStorage.setItem(cacheKey(url), JSON.stringify(d.files)); } catch {}
-          setShowForm(false);
-        }
-      } catch {}
-
-      try { localStorage.removeItem('gf_state'); } catch {}
-      es.close();
-    } else if (data?.status === 'failed') {
-      setWaiting(false);
-      if (timerRef.current) window.clearInterval(timerRef.current);
-      setError(data?.error || 'Job failed');
-      es.close();
-    }
-  } catch {}
-};
-
-    es.onerror = () => {
-      // auto-close on error; UI will continue showing waiting state
-      es.close();
-    };
+  function handleGenerateForAnotherSite() {
+    // Reset form and show it again
+    setUrl('');
+    setPrompt('');
+    setBrand('');
+    setIndustry('');
+    setCompetitors([]);
+    setCompetitorInput('');
+    setSuccessMessage(null);
+    setError(null);
+    setShowFilesInfo(false);
+    setShowForm(true);
   }
 
   return (
@@ -217,8 +110,13 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
       </div>
 
       {successMessage && (
-        <div className="mb-4 rounded border border-green-300 bg-green-50 text-green-800 px-4 py-2">
-          {successMessage}
+        <div className="mb-6 rounded-lg border-2 border-green-400 bg-green-50 text-green-800 px-6 py-4 shadow-sm">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="font-semibold">{successMessage}</span>
+          </div>
         </div>
       )}
       {error && (
@@ -227,50 +125,106 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
         </div>
       )}
 
-      {!waiting && files.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold">Previously generated files</h3>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowForm(s => !s)}>{showForm ? 'Hide form' : 'Regenerate files'}</Button>
-              <Button variant="secondary" onClick={async () => {
-                setFilesLoading(true);
-                try {
-                  const res = await fetch(`/api/files/list?url=${encodeURIComponent(url)}`);
-                  const data = await res.json();
-                  if (res.ok && Array.isArray(data.files)) {
-                    setFiles(data.files);
-                    try { localStorage.setItem(cacheKey(url), JSON.stringify(data.files)); } catch {}
-                  }
-                } finally { setFilesLoading(false); }
-              }}>Refresh</Button>
+      {showFilesInfo && (
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">What files you'll receive:</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* LLM.txt */}
+            <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start gap-3 mb-2">
+                <FileText className="w-8 h-8 text-blue-600 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-lg">llm.txt</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    AI-optimized content file that helps large language models understand your business better.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    <strong>How to use:</strong> Place in your website root directory to improve AI model responses about your brand.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Schema.org */}
+            <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start gap-3 mb-2">
+                <Code className="w-8 h-8 text-purple-600 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-lg">schema.org</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Structured data markup that helps search engines understand your content and display rich results.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    <strong>How to use:</strong> Add this JSON-LD code to your website's &lt;head&gt; section.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* robots.txt */}
+            <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start gap-3 mb-2">
+                <Settings className="w-8 h-8 text-gray-600 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-lg">robots.txt</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Instructions for search engine crawlers on which pages to index or avoid on your website.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    <strong>How to use:</strong> Place at your website root (example.com/robots.txt) to control crawler access.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* FAQ.txt */}
+            <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start gap-3 mb-2">
+                <HelpCircle className="w-8 h-8 text-green-600 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-lg">faq.txt</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Frequently asked questions optimized for AI search engines to provide accurate answers about your brand.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    <strong>How to use:</strong> Use content for your FAQ page or knowledge base to improve AI visibility.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-          {filesLoading ? (
-            <div className="text-sm text-gray-600">Loading files…</div>
-          ) : files.length === 0 ? (
-            <div className="text-sm text-gray-500">No files found for this URL.</div>
-          ) : (
-            <ul className="divide-y border rounded">
-              {files.map((f:any, idx:number) => (
-                <li key={f.id || f._id || idx} className="flex items-center justify-between px-3 py-2">
-                  <div>
-                    <div className="font-medium">{f.name || f.filename || f.title || `File ${idx+1}`}</div>
-                    <div className="text-xs text-gray-500">
-                      {f.size ? `${Math.round((f.size/1024) * 10)/10} KB` : ''} {f.createdAt ? `• ${new Date(f.createdAt).toLocaleString()}` : ''}
-                    </div>
-                  </div>
-                  {f.url || f.downloadUrl ? (
-                    <a href={(f.url || f.downloadUrl) as string} target="_blank" rel="noopener" className="text-blue-600 hover:underline">Download</a>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
+
+          {/* AEO Report Info */}
+          <div className="border-2 border-blue-200 rounded-lg p-5 bg-blue-50 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="bg-blue-600 rounded-full p-2 flex-shrink-0">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-lg text-blue-900">AEO Report</h4>
+                <p className="text-sm text-blue-800 mt-1">
+                  Answer Engine Optimization report analyzing how well your website performs in AI-powered search engines.
+                </p>
+                <p className="text-xs text-blue-700 mt-2">
+                  <strong>Includes:</strong> Performance metrics, optimization recommendations, and competitive analysis for AI search visibility.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <Button
+              onClick={handleGenerateForAnotherSite}
+              className="btn-firecrawl-default h-10 px-6"
+            >
+              Generate Files for Another Site
+            </Button>
+          </div>
         </div>
       )}
 
-      {!waiting && (showForm || files.length === 0) ? (
+      {showForm && !showFilesInfo && (
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -324,13 +278,6 @@ export function FilesTab({ prefill }: { prefill?: { url?: string; customerName?:
             <Button type="submit" disabled={sending} className="btn-firecrawl-default h-9 px-4">{sending ? 'Sending…' : 'Send Request'}</Button>
           </div>
         </form>
-      ) : (
-        <div className="flex items-center justify-between border rounded px-4 py-3 bg-gray-50">
-          <div className="text-sm text-gray-900 font-semibold">
-            Request created. Generating files…
-          </div>
-          <div className="text-sm text-gray-900 font-bold">Elapsed <span className="font-mono">{elapsedFmt}</span></div>
-        </div>
       )}
     </div>
   );
