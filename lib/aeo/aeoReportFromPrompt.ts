@@ -83,43 +83,62 @@ export function renderAeoJsonToHtml(data: AeoModelOutput | AeoModelOutput[] | st
   const summary = computeSummary(items);
   const sections = items.map(page => `
     <section class="card">
-      <h2>Page: ${escapeHtml(page.url)}</h2>
-      <div class="grid">
-        <div class="card">
-          <h3>Summary Scores</h3>
-          <ul>
-            <li>Structured Coverage: ${page.summaryScore?.structuredCoverage ?? 0}</li>
-            <li>Unstructured Coverage: ${page.summaryScore?.unstructuredCoverage ?? 0}</li>
-            <li>Optimization Opportunities: ${page.summaryScore?.optimizationOpportunities ?? 0}</li>
-            <li>Overall AEO Readiness: ${page.summaryScore?.overallAEOReadiness ?? 0}</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Structured Content</h3>
-          <ul>
-            ${(page.structuredContent||[]).map(it => `<li><b>${escapeHtml(it.type)}</b> — ${escapeHtml(it.textOrSummary)} <em>(${escapeHtml(it.status)})</em>${renderIssues(it.issues)}${renderRec(it.recommendedChanges)}</li>`).join('') || '<li>—</li>'}
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Unstructured Content</h3>
-          <ul>
-            ${(page.unstructuredContent||[]).map(it => `<li><b>${escapeHtml(it.contentType)}</b> — ${escapeHtml(it.textOrAlt)} ${it.suggestedAeoType ? `(suggest: ${escapeHtml(it.suggestedAeoType)})` : ''}${it.reasonItIsImportant ? ` — ${escapeHtml(it.reasonItIsImportant)}`: ''}${it.recommendation ? ` — <em>${escapeHtml(it.recommendation)}</em>`: ''}</li>`).join('') || '<li>—</li>'}
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Optimization Suggestions</h3>
-          <ul>
-            ${(page.optimizationSuggestions||[]).map(s => `<li>${s.existingContent ? `<b>${escapeHtml(s.existingContent)}</b>: `: ''}${escapeHtml(s.problem || '')} — <em>${escapeHtml(s.suggestedFix || '')}</em></li>`).join('') || '<li>—</li>'}
-          </ul>
-        </div>
-        <div class="card">
-          <h3>New Content Recommendations</h3>
-          <ul>
-            ${(page.newContentRecommendations||[]).map(nc => `<li><b>${escapeHtml(nc.contentType)}</b> — ${escapeHtml(nc.suggestedTopicOrText)}${nc.aeoType ? ` (as ${escapeHtml(nc.aeoType)})`: ''}${nc.reasonForAdding ? ` — ${escapeHtml(nc.reasonForAdding)}`: ''}</li>`).join('') || '<li>—</li>'}
-          </ul>
-        </div>
-      </div>
-    </section>
+  <h2>Page: ${escapeHtml(page.url)}</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Summary Scores</h3>
+      <ul>
+        <li>Structured Coverage: ${page.summaryScore?.structuredCoverage ?? 0}</li>
+        <li>Unstructured Coverage: ${page.summaryScore?.unstructuredCoverage ?? 0}</li>
+        <li>Optimization Opportunities: ${page.summaryScore?.optimizationOpportunities ?? 0}</li>
+        <li>Overall AEO Readiness: ${page.summaryScore?.overallAEOReadiness ?? 0}</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Structured Content</h3>
+      <ul>
+        ${(page.structuredContent||[]).map(it => 
+          `<li><b>${escapeHtml(it.type)}</b> — ${escapeHtml(it.textOrSummary)} 
+          <em>(${escapeHtml(it.status)})</em>${renderIssues(it.issues)}${renderRec(it.recommendedChanges)}</li>`
+        ).join('') || '<li>—</li>'}
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Unstructured Content</h3>
+      <ul>
+        ${(page.unstructuredContent||[]).map(it => 
+          `<li><b>${escapeHtml(it.contentType)}</b> — ${escapeHtml(it.textOrAlt)} 
+          ${it.suggestedAeoType ? `(suggest: ${escapeHtml(it.suggestedAeoType)})` : ''} 
+          ${it.reasonItIsImportant ? ` — ${escapeHtml(it.reasonItIsImportant)}`: ''} 
+          ${it.recommendation ? ` — <em>${escapeHtml(it.recommendation)}</em>`: ''}</li>`
+        ).join('') || '<li>—</li>'}
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Optimization Suggestions</h3>
+      <ul>
+        ${(page.optimizationSuggestions||[]).map(s => 
+          `<li>${s.existingContent ? `<b>${escapeHtml(s.existingContent)}</b>: `: ''} 
+          ${escapeHtml(s.problem || '')} — <em>${escapeHtml(s.suggestedFix || '')}</em></li>`
+        ).join('') || '<li>—</li>'}
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>New Content Recommendations</h3>
+      <ul>
+        ${(page.newContentRecommendations||[]).map(nc => 
+          `<li><b>${escapeHtml(nc.contentType)}</b> — ${escapeHtml(nc.suggestedTopicOrText)} 
+          ${nc.aeoType ? ` (as ${escapeHtml(nc.aeoType)})`: ''} 
+          ${nc.reasonForAdding ? ` — ${escapeHtml(nc.reasonForAdding)}`: ''}</li>`
+        ).join('') || '<li>—</li>'}
+      </ul>
+    </div>
+  </div>
+</section>
   `).join('\n');
 
   const labels = Object.keys(summary.schemaCounts);
@@ -162,9 +181,34 @@ header p {margin:5px 0 0;font-size:0.95em;color:#e4e6eb}
 .metric:hover {transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.25)}
 .metric h3 {font-size:1em;margin-bottom:10px}
 .metric span {font-size:1.6em;font-weight:bold}
-.card {background:white;border-radius:12px;padding:20px;margin:20px 0;box-shadow:0 4px 12px rgba(0,0,0,0.08);transition:all .3s}
-.card:hover {transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.18)}
-.card h2 {margin-top:0;font-size:1.4em;color:#2c3e50;border-bottom:2px solid #ecf0f1;padding-bottom:8px}
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: all 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 1.4em;
+  color: #2c3e50;
+  border-bottom: 2px solid #ecf0f1;
+  padding-bottom: 8px;
+}
+
+/* 🧱 FIX: Make cards stack vertically */
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .summary {font-size:1.05em;margin-bottom:10px}
 .badge {display:inline-block;padding:4px 12px;border-radius:16px;font-size:.85em;font-weight:bold;color:white}
 .badge.green {background:#27ae60}.badge.red {background:#e74c3c}.badge.orange {background:#f39c12}.badge.gray {background:#7f8c8d}
