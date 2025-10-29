@@ -219,7 +219,7 @@ function AeoReportTab({ prefill, onOpenBrandForUrl, onOpenFilesForUrl }: { prefi
   const [customerName, setCustomerName] = useState('');
   const [url, setUrl] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [reportData, setReportData] = useState<{ htmlContent: string; customerName: string; reportType: string; generatedAt: string } | null>(null);
+  const [reportData, setReportData] = useState<{ htmlContent: string; customerName: string; reportType: string; generatedAt: string; read: boolean } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reports, setReports] = useState<Array<{ id: string; customerName: string; url: string; createdAt: string }>>([]);
   const [loadingReports, setLoadingReports] = useState(false);
@@ -317,7 +317,7 @@ function AeoReportTab({ prefill, onOpenBrandForUrl, onOpenFilesForUrl }: { prefi
       const res = await fetch(`/api/aeo-report/view?id=${encodeURIComponent(id)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load report');
-      setReportData({ htmlContent: data.html, customerName: data.customerName, reportType: 'combined-ai', generatedAt: data.createdAt });
+      setReportData({ htmlContent: data.html, customerName: data.customerName, reportType: 'combined-ai', generatedAt: data.createdAt, read: data.read });
       setSidebarOpen(false);
     } catch (e) {
       // no-op
@@ -369,7 +369,7 @@ function AeoReportTab({ prefill, onOpenBrandForUrl, onOpenFilesForUrl }: { prefi
                 <div key={r.id} className="p-3 rounded-lg hover:bg-gray-100">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleOpenReport(r.id)}>
-                      <p className="font-medium truncate">{r.customerName || 'Untitled'}</p>
+                      <p className="font-medium truncate">{r.customerName || 'Untitled'} {r.read === false && <span className="ml-2 inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">New</span>}</p>
                       <p className="text-sm text-gray-500 truncate">{r.url}</p>
                       <p className="text-xs text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</p>
                     </div>

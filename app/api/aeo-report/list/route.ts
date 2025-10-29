@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       : eq(aeoReports.userEmail, userEmail!);
 
     const rows = await db
-      .select({ id: aeoReports.id, customerName: aeoReports.customerName, url: aeoReports.url, createdAt: aeoReports.createdAt })
+      .select({ id: aeoReports.id, customerName: aeoReports.customerName, url: aeoReports.url, createdAt: aeoReports.createdAt, read: aeoReports.read })
       .from(aeoReports)
       .where(where)
       .orderBy(desc(aeoReports.createdAt));

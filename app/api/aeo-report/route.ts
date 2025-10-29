@@ -6,7 +6,7 @@ import { buildBasicSectionFromAudit } from '../../../lib/aeo/basicFromAudit';
 import { callLLMJSON } from '../../../lib/providers/llm';
 import { SCHEMA_AUDIT_PROMPT } from '../../../lib/aeo/prompts/schemaAuditPrompt';
 import { db } from '../../../lib/db';
-import { aeoReports } from '../../../lib/db/schema';
+import { aeoReports, notifications } from '../../../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { auth } from '../../../lib/auth';
 
@@ -114,130 +114,67 @@ export async function POST(request: NextRequest) {
       // no session, continue
     }
 
-    // 1) Build audit bundle once
-    const cappedMaxPages = Math.max(1, Math.min(Number(maxPages) || 5, 5));
-    const audit = await buildAuditBundle(url, { maxPages: cappedMaxPages });
-    const auditJSON = JSON.stringify(audit);
-
-    // 2) First flow: AEO auditor
-    const auditorPrompt = `${AUDITOR_PROMPT_PREFIX}\n\nDATA:\n${auditJSON}`;
-    const llmAeo = await callLLMJSON(auditorPrompt);
-    if (!llmAeo.ok) {
-      return NextResponse.json({ error: 'LLM (AEO auditor) failed', details: llmAeo.error }, { status: 500 });
-    }
-    let aeoParsed: AeoModelOutput | AeoModelOutput[];
+    // Insert into DB with empty HTML
+    let insertedReport;
     try {
-      const cleaned = extractFirstJsonValue(llmAeo.content);
-      aeoParsed = JSON.parse(cleaned);
-    } catch (e: any) {
-      return NextResponse.json({ error: 'AEO auditor JSON parse failed', details: String(e?.message || e) }, { status: 500 });
-    }
-    const aeoHtml = renderAeoJsonToHtml(aeoParsed, customerName);
-
-    // 3) Second flow: Schema auditor
-    const schemaPrompt = SCHEMA_AUDIT_PROMPT.replace('{{ SEO_AUDIT_JSON }}', auditJSON);
-    const llmSchema = await callLLMJSON(schemaPrompt);
-    if (!llmSchema.ok) {
-      return NextResponse.json({ error: 'LLM (Schema auditor) failed', details: llmSchema.error }, { status: 500 });
-    }
-    let schemaParsed: SchemaAuditOutput;
-    try {
-      const cleaned = extractFirstJsonValue(llmSchema.content);
-      schemaParsed = JSON.parse(cleaned);
-    } catch (e: any) {
-      return NextResponse.json({ error: 'Schema auditor JSON parse failed', details: String(e?.message || e) }, { status: 500 });
-    }
-    const schemaHtml = renderSchemaAuditToHtml(schemaParsed, customerName);
-
-undefined
-
-    // 4.5) Third flow: Basic SEO (from audit bundle)
-    const basicFromAuditHtml = buildBasicSectionFromAudit(audit);
-
-    // 5) Merge all three sections into one HTML wrapper with headings
-    const mergedHtml = `<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>AEO Report - ${escapeHtml(customerName)}</title>
-    <style>
-      :root{--primary:#155DFC;--text:#111;--muted:#6b7280;--bg:#ffffff;--card:#ffffff;--border:#e5e7eb}
-      *{box-sizing:border-box}
-      html,body{height:100%}
-      body{font-family:Arial,Helvetica,sans-serif;margin:0;color:var(--text);background:var(--bg)}
-      .container{max-width:1024px;margin:0 auto;padding:24px}
-      header.report-header{border-bottom:3px solid var(--primary);padding:16px 0;margin-bottom:20px}
-      header.report-header h1{margin:0;font-size:28px;color:#000}
-      header.report-header .meta{color:var(--muted);font-size:14px}
-      .badge{display:inline-block;background:var(--primary);color:#fff;border-radius:999px;padding:4px 10px;font-size:12px;margin-left:8px}
-      .section{margin:16px 0;break-inside:avoid}
-      .section h2{font-size:20px;border-left:6px solid var(--primary);padding-left:10px;margin:0 0 10px 0}
-      .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
-      .col-12{grid-column:span 12}
-      .col-6{grid-column:span 12}
-      @media screen and (min-width:900px){.col-6{grid-column:span 6}}
-      .card{background:var(--card);border:1px solid var(--border);padding:14px;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,0.04);margin-bottom:12px}
-      .card h3{margin-top:0;color:#000}
-      ul{margin:0;padding-left:18px}
-      pre{background:#0b1220;color:#e5e7eb;padding:12px;border-radius:8px;overflow:auto;border:1px solid #111827}
-      code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-
-      /* Print optimization */
-      @media print{
-        body{background:#fff}
-        .container{padding:12px}
-        header.report-header{page-break-after:avoid}
-        .section{page-break-inside:avoid}
-        .card{page-break-inside:avoid}
-        pre{white-space:pre-wrap;word-wrap:break-word}
-        /* Limit overly long lists/tables per page */
-        .limit-page{max-height:1100px;overflow:hidden}
-      }
-
-      /* Manual page-break helpers if needed in content */
-      .page-break{page-break-before:always}
-      .avoid-break{break-inside:avoid}
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <header class="report-header">
-        <h1>AEO Combined Report <span class="badge">AI + Schema + Basic</span></h1>
-        <div class="meta">Customer: ${escapeHtml(customerName)} | URL: ${escapeHtml(url)} | Generated: ${new Date().toLocaleString()}</div>
-      </header>
-
-      <div class="section">
-        <h2>Basic SEO Summary</h2>
-        ${basicFromAuditHtml}
-      </div>
-
-      <div class="section">
-        <h2>AEO Audit (AI)</h2>
-        ${aeoHtml}
-      </div>
-
-      <div class="section">
-        <h2>Schema Audit & Optimized JSON-LD</h2>
-        ${schemaHtml}
-      </div>
-    </div>
-  </body>
-</html>`;
-
-    // 6) Insert into DB
-    try {
-      await db.insert(aeoReports).values({
+      insertedReport = await db.insert(aeoReports).values({
         userId: userId || null,
         userEmail: userEmail || null,
         customerName,
         url,
-        html: mergedHtml,
-      });
+        html: "", // HTML column is empty
+        read: false, // Default to unread
+      }).returning({ id: aeoReports.id }); // Get the ID of the newly inserted record
     } catch (e) {
       console.error('Failed to insert aeo_report:', e);
+      return NextResponse.json({ error: 'Failed to initiate AEO report generation' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, htmlContent: mergedHtml, customerName, reportType: 'combined-ai', generatedAt: new Date().toISOString() });
+    const reportId = insertedReport[0]?.id;
+
+    if (!reportId) {
+      return NextResponse.json({ error: 'Failed to get report ID after insertion' }, { status: 500 });
+    }
+
+    // Send data to webhook
+    try {
+      await fetch("https://n8n.welz.in/webhook/2f48da23-976e-4fd0-97da-2cb24c0b3e39", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reportId,
+          url,
+          userEmail: userEmail || null,
+          brand: customerName,
+        }),
+      });
+    } catch (e) {
+      console.error('Failed to send webhook for aeo_report:', e);
+      // Optionally, handle webhook failure more robustly, e.g., mark report as failed
+    }
+
+    // Insert notification entry
+    try {
+      await db.insert(notifications).values({
+        userId: userId || null,
+        userEmail: userEmail || null,
+        type: 'aeo_report_generated',
+        message: `Your AEO report for ${customerName} is being generated. We will notify you when it's ready.`,
+        link: `/brand-monitor?tab=aeo&id=${reportId}`,
+        status: 'not_sent',
+        read: false,
+      });
+    } catch (e) {
+      console.error('Failed to insert notification for aeo_report:', e);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "AEO report generation initiated. We will notify you when the report is ready.",
+      reportId: reportId,
+    });
   } catch (error) {
     console.error('AEO Report generation error (combined flows):', error);
     return NextResponse.json({ error: 'Failed to generate AEO report', details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });

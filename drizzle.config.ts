@@ -4,6 +4,8 @@ import * as dotenv from 'dotenv';
 // Load environment variables
 dotenv.config({ path: '.env.local' });
 
+console.log("DATABASE_URL used by drizzle-kit:", process.env.DATABASE_URL);
+
 export default {
   schema: './lib/db/schema.ts',
   out: './drizzle-generated',

@@ -693,8 +693,6 @@ def save_insight_report(customer_name, output_dir, logger,
     _add_section("Ngrams 2", interpret_ngrams, ngram_2_df, 2)
     _add_section("Ngrams 3", interpret_ngrams, ngram_3_df, 3)
 
-    css_path = os.path.join(os.path.dirname(__file__), "report_style.css")
-    print(css_path)
     try:
         with open(css_path, "r") as f:
             css_content = f.read()

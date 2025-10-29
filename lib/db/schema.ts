@@ -1,6 +1,7 @@
 import { pgTable, text, timestamp, uuid, boolean, jsonb, integer, pgEnum } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 export * from './schema.files';
+export * from './schema.notifications';
 
 // Enums
 export const roleEnum = pgEnum('role', ['user', 'assistant']);
@@ -114,6 +115,7 @@ export const aeoReports = pgTable('aeo_reports', {
   customerName: text('customer_name').notNull(),
   url: text('url').notNull(),
   html: text('html').notNull(),
+  read: boolean('read').default(false),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

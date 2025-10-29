@@ -33,7 +33,14 @@ export async function GET(request: NextRequest) {
     const row = rows[0];
     if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    return NextResponse.json({ id: row.id, customerName: row.customerName, url: row.url, html: row.html, createdAt: row.createdAt });
+    // Mark report as read
+    if (!row.read) {
+      await db.update(aeoReports)
+        .set({ read: true })
+        .where(eq(aeoReports.id, id));
+    }
+
+    return NextResponse.json({ id: row.id, customerName: row.customerName, url: row.url, html: row.html, createdAt: row.createdAt, read: true });
   } catch (e) {
     console.error('Failed to view AEO report', e);
     return NextResponse.json({ error: 'Failed to view report' }, { status: 500 });
