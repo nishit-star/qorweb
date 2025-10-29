@@ -995,12 +995,19 @@ export async function analyzeCompetitorsByProvider(
         const providerMap = providerData.get(response.provider);
         if (!providerMap) return;
 
-        // Process rankings
+        // Track companies already counted for this response to avoid double counting
+        const mentionedInResponse = new Set<string>();
+
+        // Process rankings (structured output)
         if (response.rankings) {
             response.rankings.forEach(ranking => {
                 if (trackedCompanies.has(ranking.company)) {
                     const data = providerMap.get(ranking.company)!;
-                    data.mentions++;
+                    // Only count one mention per company per response
+                    if (!mentionedInResponse.has(ranking.company)) {
+                        data.mentions++;
+                        mentionedInResponse.add(ranking.company);
+                    }
                     data.positions.push(ranking.position);
                     if (ranking.sentiment) {
                         data.sentiments.push(ranking.sentiment);
@@ -1009,15 +1016,36 @@ export async function analyzeCompetitorsByProvider(
             });
         }
 
-        // Count brand mentions
+        // Also credit competitors detected (fallback path) if present
+        if (Array.isArray(response.competitors) && response.competitors.length > 0) {
+            response.competitors.forEach(name => {
+                if (trackedCompanies.has(name)) {
+                    const data = providerMap.get(name)!;
+                    if (!mentionedInResponse.has(name)) {
+                        data.mentions++;
+                        mentionedInResponse.add(name);
+                    }
+                    // We don't have a specific position here; keep sentiments coarse
+                    // Use the response-level sentiment as a weak signal
+                    if (response.sentiment) {
+                        data.sentiments.push(response.sentiment);
+                    }
+                }
+            });
+        }
+
+        // Count brand mentions if not already captured above
         if (response.brandMentioned && trackedCompanies.has(company.name)) {
             const brandData = providerMap.get(company.name)!;
-            if (!response.rankings?.some(r => r.company === company.name)) {
+            const alreadyCounted = mentionedInResponse.has(company.name)
+                || response.rankings?.some(r => r.company === company.name);
+            if (!alreadyCounted) {
                 brandData.mentions++;
                 if (response.brandPosition) {
                     brandData.positions.push(response.brandPosition);
                 }
                 brandData.sentiments.push(response.sentiment);
+                mentionedInResponse.add(company.name);
             }
         }
     });
