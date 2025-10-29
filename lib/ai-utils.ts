@@ -432,12 +432,19 @@ export async function analyzePromptWithProvider(
     provider: string,
     brandName: string,
     competitors: string[],
-    useMockMode: boolean = false
+    useMockMode: boolean = false,
+    detectionContext?: {
+        brandUrls?: string[];
+        competitorUrls?: Record<string, string[]>;
+    }
 ): Promise<AIResponse> {
     // Mock mode for demo/testing without API keys
     if (useMockMode || provider === 'Mock') {
         return generateMockResponse(prompt, provider, brandName, competitors);
     }
+
+    const brandUrls = detectionContext?.brandUrls ?? [];
+    const competitorUrlMap = detectionContext?.competitorUrls ?? {};
 
     // Normalize provider name for consistency
     const normalizedProvider = normalizeProviderName(provider);
@@ -596,18 +603,22 @@ Return a simple analysis:
                     const brandDetection = detectBrandMention(text, brandName, {
                         caseSensitive: false,
                         wholeWordOnly: true,
-                        includeVariations: true
+                        includeVariations: true,
+                        includeUrlDetection: brandUrls.length > 0,
+                        brandUrls: brandUrls.length > 0 ? brandUrls : undefined
                     });
 
-                    const competitorDetections = detectMultipleBrands(text, competitors, {
-                        caseSensitive: false,
-                        wholeWordOnly: true,
-                        includeVariations: true
+                    const competitors_mentioned = competitors.filter(name => {
+                        const urls = competitorUrlMap[name.toLowerCase()];
+                        const detection = detectBrandMention(text, name, {
+                            caseSensitive: false,
+                            wholeWordOnly: true,
+                            includeVariations: true,
+                            includeUrlDetection: urls && urls.length > 0,
+                            brandUrls: urls && urls.length > 0 ? urls : undefined
+                        });
+                        return detection.mentioned;
                     });
-
-                    const competitors_mentioned = competitors.filter(c =>
-                        competitorDetections.get(c)?.mentioned || false
-                    );
 
                     return {
                         provider,
@@ -630,13 +641,9 @@ Return a simple analysis:
             const brandDetection = detectBrandMention(text, brandName, {
                 caseSensitive: false,
                 wholeWordOnly: true,
-                includeVariations: true
-            });
-
-            const competitorDetections = detectMultipleBrands(text, competitors, {
-                caseSensitive: false,
-                wholeWordOnly: true,
-                includeVariations: true
+                includeVariations: true,
+                includeUrlDetection: brandUrls.length > 0,
+                brandUrls: brandUrls.length > 0 ? brandUrls : undefined
             });
 
             return {
@@ -645,7 +652,17 @@ Return a simple analysis:
                 response: text,
                 brandMentioned: brandDetection.mentioned,
                 brandPosition: undefined,
-                competitors: competitors.filter(c => competitorDetections.get(c)?.mentioned || false),
+                competitors: competitors.filter(name => {
+                    const urls = competitorUrlMap[name.toLowerCase()];
+                    const detection = detectBrandMention(text, name, {
+                        caseSensitive: false,
+                        wholeWordOnly: true,
+                        includeVariations: true,
+                        includeUrlDetection: urls && urls.length > 0,
+                        brandUrls: urls && urls.length > 0 ? urls : undefined
+                    });
+                    return detection.mentioned;
+                }),
                 rankings: [],
                 sentiment: 'neutral' as const,
                 confidence: brandDetection.confidence * 0.5, // Lower confidence for fallback
@@ -661,7 +678,12 @@ Return a simple analysis:
         }));
 
         // Enhanced fallback with proper brand detection using configured options
-        const brandDetectionOptions = getBrandDetectionOptions(brandName);
+        const baseBrandOptions = getBrandDetectionOptions(brandName);
+        const brandDetectionOptions = {
+            ...baseBrandOptions,
+            brandUrls: brandUrls.length > 0 ? brandUrls : baseBrandOptions.brandUrls,
+            includeUrlDetection: baseBrandOptions.includeUrlDetection ?? (brandUrls.length > 0),
+        };
 
         // Detect brand mention with enhanced detection
         const brandDetectionResult = detectBrandMention(text, brandName, brandDetectionOptions);
@@ -670,7 +692,13 @@ Return a simple analysis:
         // Detect all competitor mentions with their specific options
         const competitorDetectionResults = new Map<string, any>();
         competitors.forEach(competitor => {
-            const competitorOptions = getBrandDetectionOptions(competitor);
+            const baseOptions = getBrandDetectionOptions(competitor);
+            const urls = competitorUrlMap[competitor.toLowerCase()];
+            const competitorOptions = {
+                ...baseOptions,
+                brandUrls: urls && urls.length > 0 ? urls : baseOptions.brandUrls,
+                includeUrlDetection: baseOptions.includeUrlDetection ?? (urls && urls.length > 0),
+            };
             const result = detectBrandMention(text, competitor, competitorOptions);
             competitorDetectionResults.set(competitor, result);
         });
@@ -959,6 +987,9 @@ export async function analyzeCompetitorsByProvider(
     providerComparison: ProviderComparisonData[];
 }> {
     const trackedCompanies = new Set([company.name, ...knownCompetitors]);
+    const MAX_POSITION_FOR_SCORING = 10;
+    const COVERAGE_WEIGHT = 0.6;
+    const POSITION_WEIGHT = 0.4;
 
     // Get configured providers from centralized config
     const configuredProviders = getConfiguredProviders();
@@ -1065,28 +1096,58 @@ export async function analyzeCompetitorsByProvider(
                 ? data.positions.reduce((a, b) => a + b, 0) / data.positions.length
                 : null;
 
+            const averagePositionValue = avgPosition !== null
+                ? Math.round(avgPosition * 10) / 10
+                : 0;
+
+            const coverageScore = totalResponses > 0
+                ? Math.min(100, (data.mentions / totalResponses) * 100)
+                : 0;
+
+            let positionScore = 0;
+            if (avgPosition !== null) {
+                const clampedPosition = Math.max(1, Math.min(avgPosition, MAX_POSITION_FOR_SCORING));
+                positionScore = ((MAX_POSITION_FOR_SCORING - clampedPosition) / (MAX_POSITION_FOR_SCORING - 1)) * 100;
+            } else if (data.mentions > 0) {
+                // Give partial credit when a mention exists but no ranked position is returned
+                positionScore = 35;
+            }
+
+            const rawVisibilityScore = ((coverageScore * COVERAGE_WEIGHT) + (positionScore * POSITION_WEIGHT));
             competitors.push({
                 name,
                 mentions: data.mentions,
-                averagePosition: Math.round(avgPosition * 10) / 10,
+                averagePosition: averagePositionValue,
                 sentiment: determineSentiment(data.sentiments),
                 sentimentScore: calculateSentimentScore(data.sentiments),
                 shareOfVoice: 0, // Will calculate after
-                visibilityScore: 0, // Will calculate after
+                visibilityScore: rawVisibilityScore,
                 isOwn: name === company.name,
             });
         });
 
-        // Calculate share of voice and visibility score for this provider
-        // Both should represent the same thing - percentage of total mentions that add up to 100%
+        // Calculate share of voice for this provider
+        // Share of voice represents the percentage of total mentions that add up to 100%
         const totalMentions = competitors.reduce((sum, c) => sum + c.mentions, 0);
         competitors.forEach(c => {
             const score = totalMentions > 0
                 ? Math.round((c.mentions / totalMentions) * 1000) / 10
                 : 0;
             c.shareOfVoice = score;
-            c.visibilityScore = score;
         });
+
+        // Normalize visibility scores so they sum to 100 for this provider
+        const totalVisibility = competitors.reduce((sum, c) => sum + c.visibilityScore, 0);
+        if (totalVisibility > 0) {
+            competitors.forEach(c => {
+                c.visibilityScore = Math.round((c.visibilityScore / totalVisibility) * 1000) / 10;
+            });
+        } else {
+            // Fall back to share of voice if visibility cannot be established
+            competitors.forEach(c => {
+                c.visibilityScore = c.shareOfVoice;
+            });
+        }
 
         // Sort by visibility score
         competitors.sort((a, b) => b.visibilityScore - a.visibilityScore);

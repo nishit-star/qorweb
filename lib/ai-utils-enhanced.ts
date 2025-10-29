@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { Company, BrandPrompt, AIResponse, CompanyRanking, CompetitorRanking, ProviderSpecificRanking, ProviderComparisonData, ProgressCallback, CompetitorFoundData } from './types';
 import { getProviderModel, normalizeProviderName, isProviderConfigured, getProviderConfig, PROVIDER_CONFIGS } from './provider-config';
 import { analyzeWithAnthropicWebSearch } from './anthropic-web-search';
+import { detectBrandMention } from './brand-detection-utils';
+import { getBrandDetectionOptions } from './brand-detection-config';
 
 const RankingSchema = z.object({
   rankings: z.array(z.object({
@@ -27,12 +29,19 @@ export async function analyzePromptWithProviderEnhanced(
   brandName: string,
   competitors: string[],
   useMockMode: boolean = false,
-  useWebSearch: boolean = true // New parameter
+  useWebSearch: boolean = true, // New parameter
+  detectionContext?: {
+    brandUrls?: string[];
+    competitorUrls?: Record<string, string[]>;
+  }
 ): Promise<AIResponse> {
   // Mock mode for demo/testing without API keys
   if (useMockMode || provider === 'Mock') {
     return generateMockResponse(prompt, provider, brandName, competitors);
   }
+
+  const brandUrls = detectionContext?.brandUrls ?? [];
+  const competitorUrlMap = detectionContext?.competitorUrls ?? {};
 
   // Normalize provider name for consistency
   const normalizedProvider = normalizeProviderName(provider);
@@ -149,26 +158,52 @@ Be very thorough in detecting company names - they might appear in different con
       };
     }
 
-    // Fallback: simple text-based mention detection 
-    // This complements the AI analysis in case it misses obvious mentions
+    // Fallback detection combining enhanced detection with simple heuristics
     const textLower = text.toLowerCase();
     const brandNameLower = brandName.toLowerCase();
-    
-    // Check for brand mention with fallback text search
-    const brandMentioned = object.analysis.brandMentioned || 
-      textLower.includes(brandNameLower) ||
-      textLower.includes(brandNameLower.replace(/\s+/g, '')) || // handle spacing differences
-      textLower.includes(brandNameLower.replace(/[^a-z0-9]/g, '')); // handle punctuation
-      
-    // Add any missed competitors from text search
+
+    const baseBrandOptions = getBrandDetectionOptions(brandName);
+    const brandDetectionOptions = {
+      ...baseBrandOptions,
+      brandUrls: brandUrls.length > 0 ? brandUrls : baseBrandOptions.brandUrls,
+      includeUrlDetection: baseBrandOptions.includeUrlDetection ?? (brandUrls.length > 0),
+    };
+
+    const brandDetectionResult = detectBrandMention(text, brandName, brandDetectionOptions);
+
+    let brandMentioned = object.analysis.brandMentioned || brandDetectionResult.mentioned;
+    if (!brandMentioned) {
+      brandMentioned =
+        textLower.includes(brandNameLower) ||
+        textLower.includes(brandNameLower.replace(/\s+/g, '')) ||
+        textLower.includes(brandNameLower.replace(/[^a-z0-9]/g, ''));
+    }
+
     const aiCompetitors = new Set(object.analysis.competitors);
     const allMentionedCompetitors = new Set([...aiCompetitors]);
-    
+
     competitors.forEach(competitor => {
+      const baseOptions = getBrandDetectionOptions(competitor);
+      const urls = competitorUrlMap[competitor.toLowerCase()];
+      const competitorOptions = {
+        ...baseOptions,
+        brandUrls: urls && urls.length > 0 ? urls : baseOptions.brandUrls,
+        includeUrlDetection: baseOptions.includeUrlDetection ?? (urls && urls.length > 0),
+      };
+
+      const detection = detectBrandMention(text, competitor, competitorOptions);
       const competitorLower = competitor.toLowerCase();
-      if (textLower.includes(competitorLower) || 
-          textLower.includes(competitorLower.replace(/\s+/g, '')) ||
-          textLower.includes(competitorLower.replace(/[^a-z0-9]/g, ''))) {
+
+      if (detection.mentioned && competitor !== brandName) {
+        allMentionedCompetitors.add(competitor);
+        return;
+      }
+
+      if (
+        textLower.includes(competitorLower) ||
+        textLower.includes(competitorLower.replace(/\s+/g, '')) ||
+        textLower.includes(competitorLower.replace(/[^a-z0-9]/g, ''))
+      ) {
         allMentionedCompetitors.add(competitor);
       }
     });

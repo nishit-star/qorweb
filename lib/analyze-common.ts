@@ -6,7 +6,7 @@ import { getConfiguredProviders } from './provider-config';
 export interface AnalysisConfig {
   company: Company;
   customPrompts?: string[];
-  userSelectedCompetitors?: { name: string }[];
+  userSelectedCompetitors?: { name?: string; url?: string }[];
   useWebSearch?: boolean;
   sendEvent: (event: SSEEvent) => Promise<void>;
 }
@@ -57,27 +57,80 @@ export async function performAnalysis({
   });
 
   // Use user-selected competitors if provided, otherwise identify them
+  const sanitizeCompetitors = (list?: { name?: string; url?: string }[]) => {
+    if (!list) return [] as { name: string; url?: string }[];
+
+    const seen = new Set<string>();
+
+    return list
+      .map(item => ({
+        name: (item.name || '').trim(),
+        url: item.url?.trim(),
+      }))
+      .filter(item => {
+        if (!item.name) {
+          return false;
+        }
+        const key = item.name.toLowerCase();
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+  };
+
+  let competitorDetails = sanitizeCompetitors(userSelectedCompetitors);
   let competitors: string[];
-  if (userSelectedCompetitors && userSelectedCompetitors.length > 0) {
-    competitors = userSelectedCompetitors.map(c => c.name);
+
+  if (competitorDetails.length > 0) {
+    competitors = competitorDetails.map(c => c.name);
     console.log('Using user-selected competitors:', competitors);
     
-    // Send competitor events for UI
-    for (let i = 0; i < competitors.length; i++) {
+    for (let i = 0; i < competitorDetails.length; i++) {
       await sendEvent({
         type: 'competitor-found',
         stage: 'identifying-competitors',
         data: { 
-          competitor: competitors[i],
+          competitor: competitorDetails[i].name,
           index: i + 1,
-          total: competitors.length
+          total: competitorDetails.length
         },
         timestamp: new Date()
       });
     }
   } else {
-    competitors = await identifyCompetitors(company, sendEvent);
+    const identifiedCompetitors = await identifyCompetitors(company, sendEvent);
+    competitorDetails = identifiedCompetitors.map(name => ({ name }));
+    competitors = identifiedCompetitors;
   }
+
+  const brandUrlSet = new Set<string>();
+  if (company.url) {
+    const trimmed = company.url.trim();
+    if (trimmed) {
+      brandUrlSet.add(trimmed);
+    }
+  }
+
+  const detectionContext: {
+    brandUrls: string[];
+    competitorUrls: Record<string, string[]>;
+  } = {
+    brandUrls: Array.from(brandUrlSet).filter(Boolean) as string[],
+    competitorUrls: {},
+  };
+
+  competitorDetails.forEach(detail => {
+    if (!detail.url) return;
+    const trimmed = detail.url.trim();
+    if (!trimmed) return;
+    const key = detail.name.toLowerCase();
+    const existing = detectionContext.competitorUrls[key] || [];
+    if (!existing.includes(trimmed)) {
+      detectionContext.competitorUrls[key] = [...existing, trimmed];
+    }
+  });
 
   // Stage 2: Generate prompts
   // Skip the 100% progress for competitors and go straight to the next stage
@@ -194,17 +247,27 @@ export async function performAnalysis({
           // Debug log for each provider attempt
           console.log(`Attempting analysis with provider: ${provider.name} for prompt: "${prompt.prompt.substring(0, 50)}..."`);
           
-          // Choose the appropriate analysis function based on useWebSearch
-          const analyzeFunction = useWebSearch ? analyzePromptWithProviderEnhanced : analyzePromptWithProvider;
-          
-          const response = await analyzeFunction(
-            prompt.prompt, 
-            provider.name, 
-            company.name, 
-            competitors,
-            useMockMode,
-            ...(useWebSearch ? [true] : []) // Pass web search flag only for enhanced version
-          );
+          let response: AIResponse | null;
+          if (useWebSearch) {
+            response = await analyzePromptWithProviderEnhanced(
+              prompt.prompt,
+              provider.name,
+              company.name,
+              competitors,
+              useMockMode,
+              true,
+              detectionContext
+            );
+          } else {
+            response = await analyzePromptWithProvider(
+              prompt.prompt,
+              provider.name,
+              company.name,
+              competitors,
+              useMockMode,
+              detectionContext
+            );
+          }
           
           console.log(`Analysis completed for ${provider.name}:`, {
             hasResponse: !!response,
@@ -336,6 +399,27 @@ export async function performAnalysis({
 
   // Analyze competitors from all responses
   const competitorRankings = await analyzeCompetitors(company, responses, competitors);
+
+  if (competitorDetails.length > 0) {
+    const existing = new Set(competitorRankings.map(entry => entry.name.toLowerCase()));
+    competitorDetails.forEach(({ name }) => {
+      const key = name.toLowerCase();
+      if (!existing.has(key)) {
+        competitorRankings.push({
+          name,
+          mentions: 0,
+          averagePosition: 99,
+          sentiment: 'neutral',
+          sentimentScore: 50,
+          shareOfVoice: 0,
+          visibilityScore: 0,
+          weeklyChange: undefined,
+          isOwn: false,
+        });
+        existing.add(key);
+      }
+    });
+  }
 
   // Send scoring progress for each competitor
   for (let i = 0; i < competitorRankings.length; i++) {

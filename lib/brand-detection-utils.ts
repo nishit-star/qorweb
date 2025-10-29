@@ -204,11 +204,42 @@ export function detectBrandMention(
         includeVariations = true,
         customVariations = [],
         excludeNegativeContext = true,
-        minConfidenceThreshold = 0.65  // ADD THIS: Minimum confidence to consider a match
+        includeUrlDetection: includeUrlDetectionOption,
+        brandUrls = [],
+        minConfidenceThreshold = 0.65  // Minimum confidence to consider a match
     } = options;
 
+    const includeUrlDetection = includeUrlDetectionOption ?? (brandUrls.length > 0);
+    const normalizedBrand = normalizeBrandName(brandName);
+    const compactBrand = normalizedBrand.replace(/[^a-z0-9]/g, '');
     const searchText = caseSensitive ? text : text.toLowerCase();
+    const originalText = text;
     const matches: BrandDetectionResult['matches'] = [];
+    const negativePatterns = [
+        /\bnot\s+(?:recommended|good|worth|reliable)\b/i,
+        /\bavoid\b/i,
+        /\bworse\s+than\b/i,
+        /\binferior\s+to\b/i,
+        /\bdon't\s+(?:use|recommend|like)\b/i
+    ];
+
+    const getContext = (start: number, length: number) => {
+        const contextStart = Math.max(0, start - 50);
+        const contextEnd = Math.min(searchText.length, start + length + 50);
+        return searchText.substring(contextStart, contextEnd);
+    };
+
+    const pushMatch = (textMatch: string, index: number, pattern: string, confidence: number) => {
+        if (confidence < minConfidenceThreshold) {
+            return;
+        }
+        matches.push({
+            text: textMatch,
+            index,
+            pattern,
+            confidence
+        });
+    };
 
     // Generate patterns - but limit variations
     const patterns = wholeWordOnly
@@ -224,7 +255,7 @@ export function detectBrandMention(
             const matchText = match[0];
             const matchIndex = match.index;
 
-            // ADD: Check if match is within another word (false positive)
+            // Check if match is within another word (false positive)
             const beforeChar = matchIndex > 0 ? searchText[matchIndex - 1] : ' ';
             const afterChar = matchIndex + matchText.length < searchText.length
                 ? searchText[matchIndex + matchText.length]
@@ -237,49 +268,93 @@ export function detectBrandMention(
 
             // Check for negative context if requested
             if (excludeNegativeContext) {
-                const contextStart = Math.max(0, matchIndex - 50);
-                const contextEnd = Math.min(searchText.length, matchIndex + matchText.length + 50);
-                const context = searchText.substring(contextStart, contextEnd);
-
-                const negativePatterns = [
-                    /\bnot\s+(?:recommended|good|worth|reliable)/i,
-                    /\bavoid\b/i,
-                    /\bworse\s+than\b/i,
-                    /\binferior\s+to\b/i,
-                    /\bdon't\s+(?:use|recommend|like)\b/i
-                ];
-
+                const context = getContext(matchIndex, matchText.length);
                 const hasNegativeContext = negativePatterns.some(np => np.test(context));
                 if (hasNegativeContext) continue;
             }
 
-            // Calculate confidence based on match quality
-            let confidence = 0.5; // Base confidence
+            const originalMatch = originalText.substring(matchIndex, matchIndex + matchText.length);
+            const normalizedMatch = caseSensitive ? matchText.toLowerCase() : matchText;
+            const cleanedMatch = normalizedMatch
+                .replace(/['’]s\b/, '')
+                .replace(/^[^a-z0-9]+/, '')
+                .replace(/[^a-z0-9]+$/, '')
+                .trim();
+            const compactMatch = cleanedMatch.replace(/[^a-z0-9]/g, '');
 
-            // Exact match (case-insensitive)
-            if (matchText.toLowerCase() === brandName.toLowerCase()) {
+            // Calculate confidence based on match quality
+            let confidence = 0.45; // Base confidence
+
+            if (cleanedMatch === normalizedBrand || (compactMatch && compactMatch === compactBrand)) {
                 confidence = 1.0;
             }
-            // Exact match with suffix
-            else if (matchText.toLowerCase().startsWith(brandName.toLowerCase() + ' ')) {
-                confidence = 0.9;
+            else if (compactMatch && compactBrand && (compactMatch.startsWith(compactBrand) || compactBrand.startsWith(compactMatch))) {
+                confidence = Math.max(confidence, 0.92);
             }
-            // Variation match
+            else if (cleanedMatch && normalizedBrand && (cleanedMatch.startsWith(normalizedBrand) || normalizedBrand.startsWith(cleanedMatch))) {
+                confidence = Math.max(confidence, 0.85);
+            }
+            else if (includeVariations && compactMatch && compactBrand && (compactMatch.includes(compactBrand) || compactBrand.includes(compactMatch))) {
+                confidence = Math.max(confidence, 0.72);
+            }
             else if (includeVariations) {
-                confidence = 0.7;
+                confidence = Math.max(confidence, 0.65);
             }
 
-            // ONLY add matches that meet minimum confidence threshold
-            if (confidence >= minConfidenceThreshold) {
-                matches.push({
-                    text: matchText,
-                    index: matchIndex,
-                    pattern: pattern.source,
-                    confidence
-                });
-            }
+            pushMatch(originalMatch, matchIndex, pattern.source, confidence);
         }
     });
+
+    if (includeUrlDetection && brandUrls.length > 0) {
+        const domainVariants = new Set<string>();
+
+        brandUrls.forEach(url => {
+            if (!url) return;
+            let candidate = url.trim();
+            if (!candidate) return;
+            if (!/^https?:\/\//i.test(candidate)) {
+                candidate = `https://${candidate}`;
+            }
+            try {
+                const parsed = new URL(candidate);
+                const host = parsed.hostname.toLowerCase();
+                if (host) {
+                    domainVariants.add(host);
+                    domainVariants.add(host.replace(/^www\./, ''));
+                }
+            } catch {
+                const fallback = candidate
+                    .replace(/^https?:\/\//i, '')
+                    .replace(/^www\./i, '')
+                    .replace(/\/.*$/, '')
+                    .toLowerCase();
+                if (fallback) {
+                    domainVariants.add(fallback);
+                }
+            }
+        });
+
+        domainVariants.forEach(domain => {
+            if (!domain) return;
+            const escaped = domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const flags = caseSensitive ? 'g' : 'gi';
+            const domainRegex = new RegExp(`\\b${escaped}\\b`, flags);
+
+            let match;
+            while ((match = domainRegex.exec(searchText)) !== null) {
+                const matchIndex = match.index;
+                const matchedText = originalText.substring(matchIndex, matchIndex + match[0].length);
+
+                if (excludeNegativeContext) {
+                    const context = getContext(matchIndex, match[0].length);
+                    const hasNegativeContext = negativePatterns.some(np => np.test(context));
+                    if (hasNegativeContext) continue;
+                }
+
+                pushMatch(matchedText, matchIndex, `url:${domain}`, Math.max(0.88, minConfidenceThreshold));
+            }
+        });
+    }
 
     // Remove duplicate matches at the same position
     const uniqueMatches = matches.reduce((acc, match) => {
