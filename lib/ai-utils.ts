@@ -1050,6 +1050,12 @@ export async function analyzeCompetitorsByProvider(
         // Also credit competitors detected (fallback path) if present
         if (Array.isArray(response.competitors) && response.competitors.length > 0) {
             response.competitors.forEach(name => {
+                if (name === company.name) {
+                    // Avoid counting the primary brand from generic competitor lists;
+                    // rely on the dedicated brandMentioned flag instead
+                    return;
+                }
+
                 if (trackedCompanies.has(name)) {
                     const data = providerMap.get(name)!;
                     if (!mentionedInResponse.has(name)) {
