@@ -99,25 +99,32 @@ export function AnalysisProgressSection({
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">Competitors:</span>
                     <div className="flex -space-x-2">
-                      {identifiedCompetitors.slice(0, 6).map((comp, idx) => (
-                        <div key={idx} className="w-8 h-8 rounded-full bg-white border-2 border-white shadow-sm overflow-hidden" title={comp.name}>
-                          {comp.url ? (
-                            <img 
-                              src={`https://www.google.com/s2/favicons?domain=${comp.url}&sz=64`}
-                              alt={comp.name}
-                              className="w-full h-full object-contain p-0.5"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                const fallback = e.currentTarget.nextSibling as HTMLDivElement;
-                                if (fallback) fallback.style.display = 'flex';
-                              }}
-                            />
-                          ) : null}
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600" style={{ display: comp.url ? 'none' : 'flex' }}>
-                            {comp.name.charAt(0)}
+                      {identifiedCompetitors.slice(0, 6).map((comp, idx) => {
+                        const domain = comp.url ? comp.url.split('/')[0] : undefined;
+                        const faviconSrc = comp.metadata?.favicon || (domain
+                          ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
+                          : undefined);
+
+                        return (
+                          <div key={idx} className="w-8 h-8 rounded-full bg-white border-2 border-white shadow-sm overflow-hidden" title={comp.name}>
+                            {faviconSrc ? (
+                              <img 
+                                src={faviconSrc}
+                                alt={comp.name}
+                                className="w-full h-full object-contain p-0.5"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  const fallback = e.currentTarget.nextSibling as HTMLDivElement;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600" style={{ display: faviconSrc ? 'none' : 'flex' }}>
+                              {comp.name.charAt(0)}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {identifiedCompetitors.length > 6 && (
                         <div className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white shadow-sm flex items-center justify-center">
                           <span className="text-xs text-gray-600 font-medium">+{identifiedCompetitors.length - 6}</span>

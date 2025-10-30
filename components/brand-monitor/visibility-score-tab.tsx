@@ -2,23 +2,41 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { CompetitorRanking } from '@/lib/types';
+import { CompetitorRanking, Company } from '@/lib/types';
 import { IdentifiedCompetitor } from '@/lib/brand-monitor-reducer';
 
 interface VisibilityScoreTabProps {
   competitors: CompetitorRanking[];
   brandData: CompetitorRanking;
   identifiedCompetitors: IdentifiedCompetitor[];
+  company?: Company | null;
 }
 
 export function VisibilityScoreTab({
   competitors,
   brandData,
-  identifiedCompetitors
+  identifiedCompetitors,
+  company
 }: VisibilityScoreTabProps) {
   const topCompetitor = competitors.filter(c => !c.isOwn)[0];
   const brandRank = competitors.findIndex(c => c.isOwn) + 1;
   const difference = topCompetitor ? brandData.visibilityScore - topCompetitor.visibilityScore : 0;
+
+  const getDomainFromUrl = (value?: string | null) => {
+    if (!value) return undefined;
+    try {
+      const withProtocol = value.startsWith('http') ? value : `https://${value}`;
+      return new URL(withProtocol).hostname;
+    } catch {
+      return value.split('/')[0];
+    }
+  };
+
+  const brandDomain = getDomainFromUrl(company?.url);
+  const brandFavicon = company?.favicon || (brandDomain
+    ? `https://www.google.com/s2/favicons?domain=${brandDomain}&sz=64`
+    : undefined);
+  const brandLogoGuess = company?.logo || (brandDomain ? `https://${brandDomain}/apple-touch-icon.png` : undefined);
   
   return (
     <div className="flex flex-col h-full">
@@ -125,9 +143,15 @@ export function VisibilityScoreTab({
                   c.name === competitor.name || 
                   c.name.toLowerCase() === competitor.name.toLowerCase()
                 );
-                const faviconUrl = competitorData?.url ? 
-                  `https://www.google.com/s2/favicons?domain=${competitorData.url}&sz=64` : null;
-                const logoGuess = competitorData?.url ? `https://${competitorData.url.replace(/^https?:\/\//, '')}/apple-touch-icon.png` : null;
+                const competitorDomain = competitorData?.url ? getDomainFromUrl(competitorData.url) : undefined;
+                const faviconUrl = competitor.isOwn
+                  ? brandFavicon || null
+                  : competitorData?.metadata?.favicon || (competitorDomain
+                      ? `https://www.google.com/s2/favicons?domain=${competitorDomain}&sz=64`
+                      : null);
+                const logoGuess = competitor.isOwn
+                  ? brandLogoGuess || null
+                  : (competitorDomain ? `https://${competitorDomain}/apple-touch-icon.png` : null);
                 
                 const color = competitor.isOwn ? '#155DFC' : 
                   ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#6366f1', '#14b8a6', '#f43f5e'][idx % 8];

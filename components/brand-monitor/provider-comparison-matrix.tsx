@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, Fragment } from 'react';
-import { ProviderComparisonData } from '@/lib/types';
+import { ProviderComparisonData, Company } from '@/lib/types';
 import { ArrowUpDownIcon, ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
 import { CompetitorCell } from './competitor-cell';
 import { getConfiguredProviders } from '@/lib/provider-config';
@@ -9,6 +9,7 @@ import { getConfiguredProviders } from '@/lib/provider-config';
 interface ProviderComparisonMatrixProps {
   data: ProviderComparisonData[];
   brandName: string;
+  company?: Company | null;
   competitors?: { 
     name: string; 
     url?: string;
@@ -89,11 +90,26 @@ const generateFallbackUrl = (competitorName: string): string | undefined => {
   return possibleDomains[0];
 };
 
-export function ProviderComparisonMatrix({ data, brandName, competitors }: ProviderComparisonMatrixProps) {
+export function ProviderComparisonMatrix({ data, brandName, competitors, company }: ProviderComparisonMatrixProps) {
   // Hooks must be called before any conditional returns
   const [sortColumn, setSortColumn] = useState<string>('competitor');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>('asc');
-  
+
+  const getDomainFromUrl = (value?: string | null) => {
+    if (!value) return undefined;
+    try {
+      const withProtocol = value.startsWith('http') ? value : `https://${value}`;
+      return new URL(withProtocol).hostname;
+    } catch {
+      return value.split('/')[0];
+    }
+  };
+
+  const brandDomain = getDomainFromUrl(company?.url);
+  const brandFavicon = company?.favicon || (brandDomain
+    ? `https://www.google.com/s2/favicons?domain=${brandDomain}&sz=64`
+    : undefined);
+
   if (!data || data.length === 0) {
     return (
       <div className="text-center py-12 bg-gray-50 rounded-lg">
@@ -220,6 +236,17 @@ export function ProviderComparisonMatrix({ data, brandName, competitors }: Provi
             
             // Generate URL if not found - try to guess from competitor name
             const fallbackUrl = !competitorData?.url ? generateFallbackUrl(competitor.competitor) : undefined;
+            const sanitizedUrl = competitorData?.url ? getDomainFromUrl(competitorData.url) : undefined;
+            const resolvedUrl = competitor.isOwn
+              ? brandDomain
+              : sanitizedUrl || fallbackUrl;
+            const resolvedFavicon = competitor.isOwn
+              ? brandFavicon
+              : competitorData?.metadata?.favicon || (sanitizedUrl
+                  ? `https://www.google.com/s2/favicons?domain=${sanitizedUrl}&sz=64`
+                  : fallbackUrl
+                    ? `https://www.google.com/s2/favicons?domain=${fallbackUrl}&sz=64`
+                    : undefined);
             
             return (
               <tr key={competitor.competitor} className={rowIndex > 0 ? 'border-t border-gray-200' : ''}>
@@ -227,8 +254,8 @@ export function ProviderComparisonMatrix({ data, brandName, competitors }: Provi
                   <CompetitorCell 
                     name={competitor.competitor}
                     isOwn={competitor.isOwn}
-                    favicon={competitorData?.metadata?.favicon}
-                    url={competitorData?.url || fallbackUrl}
+                    favicon={resolvedFavicon}
+                    url={resolvedUrl}
                   />
                 </td>
                 {providers.map((provider, index) => {
