@@ -369,15 +369,36 @@ export function BrandMonitor({
       competitorMap.set(normalizedName, { name, url });
     });
     
+    const getFaviconDomain = (url?: string) => {
+      if (!url) return undefined;
+      const [domain] = url.split('/');
+      return domain;
+    };
+
     let competitors = Array.from(competitorMap.values())
       .filter(comp => comp.name !== 'Competitor 1' && comp.name !== 'Competitor 2' && 
                       comp.name !== 'Competitor 3' && comp.name !== 'Competitor 4' && 
                       comp.name !== 'Competitor 5')
-      .slice(0, 10);
+      .slice(0, 10)
+      .map(comp => {
+        const fallbackUrl = comp.url || assignUrlToCompetitor(comp.name);
+        const validatedUrl = fallbackUrl ? validateCompetitorUrl(fallbackUrl) : undefined;
+        const faviconDomain = getFaviconDomain(validatedUrl);
+
+        return {
+          ...comp,
+          url: validatedUrl,
+          metadata: faviconDomain ? {
+            ...comp.metadata,
+            favicon: `https://www.google.com/s2/favicons?domain=${faviconDomain}&sz=64`,
+            validated: true,
+          } : comp.metadata,
+        };
+      });
 
     // Just use the first 6 competitors without AI validation
     competitors = competitors.slice(0, 6);
-    
+
     console.log('Identified competitors:', competitors);
     dispatch({ type: 'SET_IDENTIFIED_COMPETITORS', payload: competitors });
     
@@ -746,6 +767,7 @@ export function BrandMonitor({
                     competitors={analysis.competitors}
                     brandData={brandData}
                     identifiedCompetitors={identifiedCompetitors}
+                    company={company}
                   />
                 )}
 
@@ -772,6 +794,7 @@ export function BrandMonitor({
                           <ProviderComparisonMatrix
                             data={analysis.providerComparison}
                             brandName={company?.name || ''}
+                            company={company}
                             competitors={identifiedCompetitors}
                           />
                         ) : (
@@ -796,6 +819,8 @@ export function BrandMonitor({
                       averagePosition={Math.round(brandData.averagePosition)}
                       sentimentScore={brandData.sentimentScore}
                       weeklyChange={brandData.weeklyChange}
+                      identifiedCompetitors={identifiedCompetitors}
+                      company={company}
                     />
                   </div>
                 )}

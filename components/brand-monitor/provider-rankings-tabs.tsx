@@ -4,10 +4,11 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ProviderSpecificRanking } from '@/lib/types';
+import { ProviderSpecificRanking, Company } from '@/lib/types';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import Image from 'next/image';
 import { getConfiguredProviders } from '@/lib/provider-config';
+import { IdentifiedCompetitor } from '@/lib/brand-monitor-reducer';
 
 // Provider icon mapping
 const getProviderIcon = (provider: string) => {
@@ -59,25 +60,37 @@ interface ProviderRankingsTabsProps {
   averagePosition?: number;
   sentimentScore?: number;
   weeklyChange?: number;
+  identifiedCompetitors?: IdentifiedCompetitor[];
+  company?: Company | null;
 }
 
 // Company cell component with favicon support
 const CompanyCell = ({
   name,
   isOwn,
-  url
+  url,
+  favicon,
+  logoGuessOverride,
 }: {
   name: string;
   isOwn?: boolean;
   url?: string;
+  favicon?: string | null;
+  logoGuessOverride?: string | null;
 }) => {
   const [faviconError, setFaviconError] = useState(false);
   const [logoFallbackShown, setLogoFallbackShown] = useState(false);
 
   // Generate favicon URL using Google's favicon service
-  const faviconUrl = url ? `https://www.google.com/s2/favicons?domain=${url}&sz=64` : null;
+  const sanitized = url ? url.replace(/^https?:\/\//, '') : undefined;
+  const fallbackFavicon = sanitized ? `https://www.google.com/s2/favicons?domain=${sanitized}&sz=64` : null;
+  const faviconUrl = favicon || fallbackFavicon;
   // Derive a possible logo URL from the domain as a last resort
-  const logoGuess = url ? `https://${url.replace(/^https?:\/\//, '')}/apple-touch-icon.png` : null;
+  const logoGuess = logoGuessOverride !== undefined
+    ? (logoGuessOverride ? logoGuessOverride : null)
+    : sanitized
+      ? `https://${sanitized}/apple-touch-icon.png`
+      : null;
 
   return (
     <div className="flex items-center gap-2">
@@ -137,7 +150,9 @@ export function ProviderRankingsTabs({
   shareOfVoice,
   averagePosition,
   sentimentScore,
-  weeklyChange
+  weeklyChange,
+  identifiedCompetitors,
+  company
 }: ProviderRankingsTabsProps) {
   const [selectedProvider, setSelectedProvider] = useState(
     providerRankings?.[0]?.provider || 'OpenAI'
@@ -167,6 +182,22 @@ export function ProviderRankingsTabs({
   const competitors = selectedProviderData?.competitors || [];
   const brandRank = competitors.findIndex(c => c.isOwn) + 1;
   const brandVisibility = competitors.find(c => c.isOwn)?.visibilityScore || 0;
+
+  const getDomainFromUrl = (value?: string | null) => {
+    if (!value) return undefined;
+    try {
+      const withProtocol = value.startsWith('http') ? value : `https://${value}`;
+      return new URL(withProtocol).hostname;
+    } catch {
+      return value.split('/')[0];
+    }
+  };
+
+  const brandDomain = getDomainFromUrl(company?.url);
+  const brandFavicon = company?.favicon || (brandDomain
+    ? `https://www.google.com/s2/favicons?domain=${brandDomain}&sz=64`
+    : undefined);
+  const brandLogoGuess = company?.logo || (brandDomain ? `https://${brandDomain}/apple-touch-icon.png` : undefined);
 
   return (
     <Card className="p-2 bg-card text-card-foreground gap-6 rounded-xl border py-6 shadow-sm border-gray-200 h-full flex flex-col">
@@ -217,7 +248,19 @@ export function ProviderRankingsTabs({
                   </thead>
                   <tbody>
                     {competitors.map((competitor, idx) => {
-                      const competitorUrl = generateFallbackUrl(competitor.name);
+                      const match = identifiedCompetitors?.find(c => 
+                        c.name === competitor.name || 
+                        c.name.toLowerCase() === competitor.name.toLowerCase()
+                      );
+                      const competitorDomain = match?.url ? getDomainFromUrl(match.url) : undefined;
+                      const fallbackUrl = competitorDomain || generateFallbackUrl(competitor.name);
+                      const faviconForCell = competitor.isOwn
+                        ? brandFavicon || null
+                        : match?.metadata?.favicon || (competitorDomain
+                            ? `https://www.google.com/s2/favicons?domain=${competitorDomain}&sz=64`
+                            : (fallbackUrl
+                                ? `https://www.google.com/s2/favicons?domain=${fallbackUrl}&sz=64`
+                                : null));
 
                       return (
                         <tr
@@ -237,7 +280,9 @@ export function ProviderRankingsTabs({
                             <CompanyCell
                               name={competitor.name}
                               isOwn={competitor.isOwn}
-                              url={competitorUrl}
+                              url={competitor.isOwn ? brandDomain : fallbackUrl}
+                              favicon={faviconForCell}
+                              logoGuessOverride={competitor.isOwn ? (brandLogoGuess || null) : null}
                             />
                           </td>
                           <td className="border-r border-gray-200 p-3 text-right">

@@ -373,7 +373,34 @@ export function assignUrlToCompetitor(competitorName: string): string | undefine
     };
 
     const normalized = competitorName.toLowerCase().trim();
-    return urlMappings[normalized];
+    if (!normalized) {
+        return undefined;
+    }
+
+    if (urlMappings[normalized]) {
+        return urlMappings[normalized];
+    }
+
+    // Intelligent fallback: attempt to derive a plausible domain from the company name
+    const cleaned = normalized
+        .replace(/&/g, ' and ')
+        .replace(/\b(the|inc|llc|ltd|co|corp|company|corporation)\b/g, ' ')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!cleaned) {
+        return undefined;
+    }
+
+    const compact = cleaned.replace(/\s+/g, '');
+
+    // Avoid returning obviously invalid guesses
+    if (compact.length < 3) {
+        return undefined;
+    }
+
+    return `${compact}.com`;
 }
 
 export function detectServiceType(company: Company): string {
