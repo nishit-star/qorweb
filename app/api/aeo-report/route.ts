@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
         userEmail: userEmail || null,
         customerName,
         url,
-        html: "", // HTML column is empty
+        html: null, // HTML column is initially null
         read: false, // Default to unread
       }).returning({ id: aeoReports.id }); // Get the ID of the newly inserted record
     } catch (e) {
@@ -132,30 +132,53 @@ export async function POST(request: NextRequest) {
 
     const reportId = insertedReport[0]?.id;
 
-    if (!reportId) {
-      return NextResponse.json({ error: 'Failed to get report ID after insertion' }, { status: 500 });
-    }
+        if (!reportId) {
 
-    // Send data to webhook
-    try {
-      await fetch("https://n8n.welz.in/webhook/2f48da23-976e-4fd0-97da-2cb24c0b3e39", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          reportId,
-          url,
-          userEmail: userEmail || null,
-          brand: customerName,
-        }),
-      });
-    } catch (e) {
-      console.error('Failed to send webhook for aeo_report:', e);
-      // Optionally, handle webhook failure more robustly, e.g., mark report as failed
-    }
+          return NextResponse.json({ error: 'Failed to get report ID after insertion' }, { status: 500 });
 
-    // Insert notification entry
+        }
+
+    
+
+        // Send data to webhook
+
+        try {
+
+          await fetch("https://n8n.welz.in/webhook/2f48da23-976e-4fd0-97da-2cb24c0b3e39", {
+
+            method: "POST",
+
+            headers: {
+
+              "Content-Type": "application/json",
+
+            },
+
+            body: JSON.stringify({
+
+              reportId,
+
+              url,
+
+              userEmail: userEmail || null,
+
+              brand: customerName,
+
+            }),
+
+          });
+
+        } catch (e) {
+
+          console.error('Failed to send webhook for aeo_report:', e);
+
+          // Optionally, handle webhook failure more robustly, e.g., mark report as failed
+
+        }
+
+    
+
+        // Insert notification entry
     try {
       await db.insert(notifications).values({
         userId: userId || null,
@@ -165,6 +188,8 @@ export async function POST(request: NextRequest) {
         link: `/brand-monitor?tab=aeo&id=${reportId}`,
         status: 'not_sent',
         read: false,
+        assetId: reportId,
+        assetTable: 'aeo_reports',
       });
     } catch (e) {
       console.error('Failed to insert notification for aeo_report:', e);

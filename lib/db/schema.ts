@@ -114,7 +114,7 @@ export const aeoReports = pgTable('aeo_reports', {
   userEmail: text('user_email'),
   customerName: text('customer_name').notNull(),
   url: text('url').notNull(),
-  html: text('html').notNull(),
+  html: text('html'),
   read: boolean('read').default(false),
   createdAt: timestamp('created_at').defaultNow(),
 });
