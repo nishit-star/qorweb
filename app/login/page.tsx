@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { signIn } from '@/lib/auth-client';
+import { signIn, useSession } from '@/lib/auth-client';
 import { GoogleSignInButton } from '@/components/ui/google-signin-button';
 
 function LoginForm() {
@@ -14,6 +14,9 @@ function LoginForm() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     if (searchParams.get('reset') === 'success') {
@@ -26,6 +29,18 @@ function LoginForm() {
       setEmail(emailParam);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!isPending && session) {
+      setIsRedirecting(true);
+      const returnUrl = searchParams.get('from') || '/';
+      if (typeof window !== 'undefined') {
+        window.location.replace(returnUrl);
+      } else {
+        router.replace(returnUrl);
+      }
+    }
+  }, [session, isPending, searchParams, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +69,14 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
+  if (isRedirecting || (!isPending && session)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Redirecting...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { signUp } from '@/lib/auth-client';
+import { useRouter } from 'next/navigation';
+import { signUp, useSession } from '@/lib/auth-client';
 import { GoogleSignInButton } from '@/components/ui/google-signin-button';
 
 export default function RegisterPage() {
@@ -13,6 +14,20 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showExistingAccountOptions, setShowExistingAccountOptions] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+
+  useEffect(() => {
+    if (!isPending && session) {
+      setIsRedirecting(true);
+      if (typeof window !== 'undefined') {
+        window.location.replace('/');
+      } else {
+        router.replace('/');
+      }
+    }
+  }, [session, isPending, router]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +71,14 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+
+  if (isRedirecting || (!isPending && session)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Redirecting...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
