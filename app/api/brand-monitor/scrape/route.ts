@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       console.error('[Brand Monitor Scrape] Error tracking usage:', err);
       // Continue even if tracking fails - we don't want to block the user
     }
-    
+
 
     // 1) Scrape company info
     const company = await scrapeCompanyInfo(normalizedUrl, maxAge);
@@ -132,6 +132,19 @@ export async function POST(request: NextRequest) {
     let prompts: any[] = [];
     try {
       prompts = await generatePromptsForCompany(company, scrapedCompetitors);
+      let len = prompts.length;
+      for(let i = 0; i < len; i++){
+        try {
+      await autumn.track({
+        customer_id: sessionResponse.user.id,
+        feature_id: FEATURE_ID_MESSAGES,
+        count: 1,
+      });
+    } catch (err) {
+      console.error('[Brand Monitor Scrape] Error tracking usage:', err);
+      // Continue even if tracking fails - we don't want to block the user
+    }
+      }
     } catch (e) {
       console.warn('[Brand Monitor Scrape] Failed to generate prompts from scrape; proceeding with empty prompts.', e);
       prompts = [];
