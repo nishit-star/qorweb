@@ -68,12 +68,57 @@ export async function POST(request: NextRequest) {
       await autumn.track({
         customer_id: sessionResponse.user.id,
         feature_id: FEATURE_ID_MESSAGES,
-        count: 0,
+        count: 1,
       });
     } catch (err) {
       console.error('[Brand Monitor Scrape] Error tracking usage:', err);
       // Continue even if tracking fails - we don't want to block the user
     }
+
+    try {
+      await autumn.track({
+        customer_id: sessionResponse.user.id,
+        feature_id: FEATURE_ID_MESSAGES,
+        count: 1,
+      });
+    } catch (err) {
+      console.error('[Brand Monitor Scrape] Error tracking usage:', err);
+      // Continue even if tracking fails - we don't want to block the user
+    }
+
+    try {
+      await autumn.track({
+        customer_id: sessionResponse.user.id,
+        feature_id: FEATURE_ID_MESSAGES,
+        count: 1,
+      });
+    } catch (err) {
+      console.error('[Brand Monitor Scrape] Error tracking usage:', err);
+      // Continue even if tracking fails - we don't want to block the user
+    }
+
+    try {
+      await autumn.track({
+        customer_id: sessionResponse.user.id,
+        feature_id: FEATURE_ID_MESSAGES,
+        count: 1,
+      });
+    } catch (err) {
+      console.error('[Brand Monitor Scrape] Error tracking usage:', err);
+      // Continue even if tracking fails - we don't want to block the user
+    }
+
+    try {
+      await autumn.track({
+        customer_id: sessionResponse.user.id,
+        feature_id: FEATURE_ID_MESSAGES,
+        count: 1,
+      });
+    } catch (err) {
+      console.error('[Brand Monitor Scrape] Error tracking usage:', err);
+      // Continue even if tracking fails - we don't want to block the user
+    }
+    
 
     // 1) Scrape company info
     const company = await scrapeCompanyInfo(normalizedUrl, maxAge);
